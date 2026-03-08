@@ -6,6 +6,7 @@ import {
   getItemById,
   markAsReturned,
   editItem,
+  deleteItem,
 } from "../controllers/item.controller";
 
 export async function itemRoutes(app: FastifyInstance) {
@@ -15,4 +16,5 @@ export async function itemRoutes(app: FastifyInstance) {
   app.post("/items", { preHandler: auth }, createItem);
   app.patch("/items/:id", { preHandler: auth }, editItem);
   app.patch("/items/:id/devolver", { preHandler: auth }, markAsReturned);
+  app.delete("/items/:id", { preHandler: auth }, deleteItem);
 }

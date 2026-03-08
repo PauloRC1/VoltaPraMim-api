@@ -170,3 +170,25 @@ export async function editItem(request: FastifyRequest, reply: FastifyReply) {
 
   return reply.send(updated);
 }
+export async function deleteItem(request: FastifyRequest, reply: FastifyReply) {
+  const params = request.params as { id: string };
+  const userId = (request as any).userId as string;
+
+  const item = await prisma.item.findUnique({
+    where: { id: params.id },
+  });
+
+  if (!item) {
+    return reply.code(404).send({ message: "Item não encontrado" });
+  }
+
+  if (item.userId !== userId) {
+    return reply.code(403).send({ message: "Você não pode excluir este item" });
+  }
+
+  await prisma.item.delete({
+    where: { id: params.id },
+  });
+
+  return reply.code(200).send({ message: "Item excluído com sucesso" });
+}
