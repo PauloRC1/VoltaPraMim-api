@@ -24,7 +24,7 @@ export async function createItem(request: FastifyRequest, reply: FastifyReply) {
       title: body.title,
       description: body.description,
       category: body.category,
-      status: "ACHADO",
+      status: "ENCONTRADO",
       location: body.location,
       date: new Date(body.date),
       imageUrl: body.imageUrl ?? null,
@@ -56,6 +56,24 @@ export async function listItems(request: FastifyRequest, reply: FastifyReply) {
     where: {
       ...(query.status ? { status: query.status } : {}),
       ...(query.category ? { category: query.category } : {}),
+      ...(query.search
+        ? {
+            OR: [
+              {
+                title: {
+                  contains: query.search,
+                  mode: "insensitive",
+                },
+              },
+              {
+                description: {
+                  contains: query.search,
+                  mode: "insensitive",
+                },
+              },
+            ],
+          }
+        : {}),
     },
     orderBy: {
       createdAt: "desc",
@@ -170,6 +188,7 @@ export async function editItem(request: FastifyRequest, reply: FastifyReply) {
 
   return reply.send(updated);
 }
+
 export async function deleteItem(request: FastifyRequest, reply: FastifyReply) {
   const params = request.params as { id: string };
   const userId = (request as any).userId as string;
@@ -191,4 +210,22 @@ export async function deleteItem(request: FastifyRequest, reply: FastifyReply) {
   });
 
   return reply.code(200).send({ message: "Item excluído com sucesso" });
+}
+
+export async function listMyItems(
+  request: FastifyRequest,
+  reply: FastifyReply,
+) {
+  const userId = (request as any).userId as string;
+
+  const items = await prisma.item.findMany({
+    where: {
+      userId: userId,
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+
+  return reply.status(200).send(items);
 }

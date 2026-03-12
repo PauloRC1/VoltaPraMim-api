@@ -3,13 +3,13 @@ generator client {
 }
 
 datasource db {
-    provider = "postgresql"
-    url      = env("DATABASE_URL")
-
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
-enum Status {
-  ACHADO
+enum ItemStatus {
+  PERDIDO
+  ENCONTRADO
   DEVOLVIDO
 }
 
@@ -25,26 +25,27 @@ model User {
   id        String   @id @default(uuid())
   name      String
   email     String   @unique
+  ra        String   @unique
   password  String
-  ra_or_id  String?
-  whatsapp  String?
+  phone     String?
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   items     Item[]
 }
 
 model Item {
-  id          String   @id @default(uuid())
+  id          String     @id @default(uuid())
   title       String
   description String
   category    Category
-  status      Status
+  status      ItemStatus
   location    String
   date        DateTime
   imageUrl    String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 
   userId      String
-  user        User @relation(fields: [userId], references: [id])
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

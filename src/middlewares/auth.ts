@@ -1,20 +1,13 @@
 import { FastifyReply, FastifyRequest } from "fastify";
-import jwt from "jsonwebtoken";
 
-export async function auth(request: FastifyRequest, reply: FastifyReply) {
-  const header = request.headers.authorization;
-
-  if (!header) return reply.code(401).send({ message: "Token ausente" });
-
-  const [type, token] = header.split(" ");
-  if (type !== "Bearer" || !token) {
-    return reply.code(401).send({ message: "Token inválido" });
-  }
-
+export async function verifyJWT(request: FastifyRequest, reply: FastifyReply) {
   try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET as string) as any;
-    (request as any).userId = payload.sub; // userId do token
-  } catch {
-    return reply.code(401).send({ message: "Token inválido" });
+    await request.jwtVerify();
+
+    const user = request.user as { sub: string };
+
+    (request as any).userId = user.sub;
+  } catch (error) {
+    return reply.status(401).send({ message: "Token inválido" });
   }
 }
