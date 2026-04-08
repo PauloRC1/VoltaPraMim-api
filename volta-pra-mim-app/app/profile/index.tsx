@@ -1,6 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
+import { useEffect, useState } from "react";
+import { AccessMode, getAccessMode, getUser, User } from "@/services/auth.storage";
 import {
+  ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
@@ -38,6 +41,86 @@ const actions = [
 ];
 
 export default function ProfileScreen() {
+  const [accessMode, setAccessMode] = useState<AccessMode | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    async function loadSession() {
+      const [storedAccessMode, storedUser] = await Promise.all([
+        getAccessMode(),
+        getUser(),
+      ]);
+
+      setAccessMode(storedAccessMode);
+      setUser(storedUser);
+    }
+
+    loadSession();
+  }, []);
+
+  if (accessMode === null) {
+    return (
+      <View style={styles.loadingScreen}>
+        <ActivityIndicator size="small" color="#3552B2" />
+      </View>
+    );
+  }
+
+  if (accessMode === "guest") {
+    return (
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => router.back()}
+            hitSlop={10}
+          >
+            <Ionicons name="arrow-back" size={22} color="#111111" />
+          </TouchableOpacity>
+
+          <Text style={styles.headerTitle}>Seu perfil</Text>
+        </View>
+
+        <View style={styles.restrictedCard}>
+          <View style={styles.restrictedIcon}>
+            <Ionicons name="person-circle-outline" size={34} color="#3552B2" />
+          </View>
+
+          <Text style={styles.restrictedTitle}>
+            Entre com seu RA para continuar
+          </Text>
+          <Text style={styles.restrictedText}>
+            O perfil completo, a edicao dos seus dados e as configuracoes da
+            conta ficam disponiveis apenas para alunos autenticados.
+          </Text>
+
+          <TouchableOpacity
+            style={styles.primaryButton}
+            onPress={() => router.replace("/login")}
+          >
+            <Text style={styles.primaryButtonText}>Entrar com RA</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.secondaryButton}
+            onPress={() => router.replace("/home")}
+          >
+            <Text style={styles.secondaryButtonText}>Voltar para home</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    );
+  }
+
+  const profileName = user?.name || profile.name;
+  const profileRa = user?.ra || profile.ra;
+  const profileEmail = user?.email || profile.email;
+  const profilePhone = user?.phone || profile.phone;
+
   return (
     <ScrollView
       style={styles.container}
@@ -61,10 +144,10 @@ export default function ProfileScreen() {
           <Ionicons name="person" size={34} color="#3552B2" />
         </View>
 
-        <Text style={styles.name}>{profile.name}</Text>
-        <Text style={styles.meta}>RA: {profile.ra}</Text>
-        <Text style={styles.meta}>{profile.email}</Text>
-        <Text style={styles.meta}>{profile.phone}</Text>
+        <Text style={styles.name}>{profileName}</Text>
+        <Text style={styles.meta}>RA: {profileRa}</Text>
+        <Text style={styles.meta}>{profileEmail}</Text>
+        <Text style={styles.meta}>{profilePhone}</Text>
       </View>
 
       <View style={styles.section}>
@@ -115,6 +198,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#F5F6FA",
   },
+  loadingScreen: {
+    flex: 1,
+    backgroundColor: "#F5F6FA",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   content: {
     paddingHorizontal: 20,
     paddingTop: 48,
@@ -144,6 +233,36 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     alignItems: "center",
     marginBottom: 22,
+  },
+  restrictedCard: {
+    backgroundColor: "#EAF0FF",
+    borderRadius: 24,
+    paddingVertical: 28,
+    paddingHorizontal: 22,
+    alignItems: "center",
+  },
+  restrictedIcon: {
+    width: 78,
+    height: 78,
+    borderRadius: 999,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
+  },
+  restrictedTitle: {
+    color: "#203469",
+    fontSize: 22,
+    fontWeight: "800",
+    textAlign: "center",
+    marginBottom: 8,
+  },
+  restrictedText: {
+    color: "#42506B",
+    fontSize: 14,
+    lineHeight: 21,
+    textAlign: "center",
+    marginBottom: 20,
   },
   avatar: {
     width: 78,
@@ -209,5 +328,34 @@ const styles = StyleSheet.create({
     color: "#6B7280",
     fontSize: 12.5,
     lineHeight: 18,
+  },
+  primaryButton: {
+    width: "100%",
+    height: 52,
+    borderRadius: 999,
+    backgroundColor: "#3552B2",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 10,
+  },
+  primaryButtonText: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "800",
+  },
+  secondaryButton: {
+    width: "100%",
+    height: 52,
+    borderRadius: 999,
+    borderWidth: 1.5,
+    borderColor: "#3552B2",
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  secondaryButtonText: {
+    color: "#3552B2",
+    fontSize: 15,
+    fontWeight: "700",
   },
 });
