@@ -1,7 +1,10 @@
 import { useState } from "react";
-import { saveAuthData } from "@/services/auth.storage";
+import {
+  clearAuthData,
+  saveAuthData,
+  saveGuestSession,
+} from "@/services/auth.storage";
 import { api } from "@/services/api";
-
 import {
   View,
   Text,
@@ -15,7 +18,6 @@ import {
   Pressable,
   KeyboardAvoidingView,
 } from "react-native";
-
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -24,10 +26,11 @@ export default function LoginScreen() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [guestLoading, setGuestLoading] = useState(false);
 
   async function handleLogin() {
     if (!login.trim() || !password.trim()) {
-      Alert.alert("Atenção", "Preencha RA ou email e a senha.");
+      Alert.alert("Atencao", "Preencha RA ou email e a senha.");
       return;
     }
 
@@ -48,18 +51,27 @@ export default function LoginScreen() {
 
       router.replace("/home");
     } catch (error: any) {
-      console.log("Erro no login:", error);
-
       if (error.response?.data?.message) {
         Alert.alert("Erro", error.response.data.message);
       } else {
         Alert.alert(
-          "Erro de conexão",
-          "Não foi possível conectar ao servidor. Verifique se o backend está rodando.",
+          "Erro de conexao",
+          "Nao foi possivel conectar ao servidor. Verifique se o backend esta rodando.",
         );
       }
     } finally {
       setIsLoading(false);
+    }
+  }
+
+  async function handleGuestAccess() {
+    try {
+      setGuestLoading(true);
+      await clearAuthData();
+      await saveGuestSession();
+      router.replace("/home");
+    } finally {
+      setGuestLoading(false);
     }
   }
 
@@ -76,12 +88,14 @@ export default function LoginScreen() {
         />
 
         <Text style={styles.title}>Bem-vindo ao VoltaPraMim</Text>
-        <Text style={styles.subtitle}>Sistema de Achados e Perdidos</Text>
+        <Text style={styles.subtitle}>
+          Entre com seu RA ou email institucional
+        </Text>
 
         <View style={styles.form}>
           <TextInput
             style={styles.input}
-            placeholder="Digite seu RA ou Email"
+            placeholder="Digite seu RA ou email"
             placeholderTextColor="#7E858F"
             value={login}
             onChangeText={setLogin}
@@ -123,6 +137,20 @@ export default function LoginScreen() {
             )}
           </TouchableOpacity>
 
+          <TouchableOpacity
+            style={[styles.secondaryButton, guestLoading && styles.buttonDisabled]}
+            onPress={handleGuestAccess}
+            disabled={guestLoading}
+          >
+            {guestLoading ? (
+              <ActivityIndicator color="#3552B2" />
+            ) : (
+              <Text style={styles.secondaryButtonText}>
+                Continuar como visitante
+              </Text>
+            )}
+          </TouchableOpacity>
+
           <TouchableOpacity hitSlop={10}>
             <Text style={styles.forgotPassword}>Esqueceu a senha?</Text>
           </TouchableOpacity>
@@ -130,12 +158,12 @@ export default function LoginScreen() {
           <Text style={styles.orText}>ou</Text>
 
           <View style={styles.signupRow}>
-            <Text style={styles.signupText}>Não tem uma conta? </Text>
+            <Text style={styles.signupText}>Primeiro acesso? </Text>
             <TouchableOpacity
               hitSlop={10}
               onPress={() => router.push("/register")}
             >
-              <Text style={styles.signupLink}>Criar conta</Text>
+              <Text style={styles.signupLink}>Ativar conta</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -212,6 +240,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  secondaryButton: {
+    height: 54,
+    borderRadius: 999,
+    borderWidth: 1.5,
+    borderColor: "#3552B2",
+    backgroundColor: "#EFF3FF",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   buttonDisabled: {
     opacity: 0.7,
   },
@@ -219,6 +256,11 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 18,
     fontWeight: "800",
+  },
+  secondaryButtonText: {
+    color: "#3552B2",
+    fontSize: 15,
+    fontWeight: "700",
   },
   forgotPassword: {
     color: "#4E6DCC",

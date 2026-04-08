@@ -3,6 +3,7 @@ import {
   Animated,
   FlatList,
   Image,
+  ImageStyle,
   NativeScrollEvent,
   NativeSyntheticEvent,
   Pressable,
@@ -14,7 +15,18 @@ import {
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
-const onboardingData = [
+type OnboardingItem = {
+  id: string;
+  title: string;
+  description: string;
+  image: number;
+  imageStyle?: ImageStyle;
+  textBlockStyle?: {
+    marginTop?: number;
+  };
+};
+
+const onboardingData: OnboardingItem[] = [
   {
     id: "1",
     title: "Perdeu ou encontrou algo?",

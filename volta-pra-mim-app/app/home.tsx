@@ -1,128 +1,407 @@
-import { useEffect, useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  ActivityIndicator,
-  Alert,
-} from "react-native";
-import { api } from "../services/api";
+import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
+import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { mockItems, MockItem } from "@/data/mock-items";
 
-type Item = {
-  id: string;
-  title: string;
-  description: string;
-  location: string;
+const profile = {
+  name: "Marcinho Branco",
+  email: "marchinho.nbrc@gmail.com",
 };
 
-export default function HomeScreen() {
-  const [items, setItems] = useState<Item[]>([]);
-  const [loading, setLoading] = useState(true);
+const recentItems = mockItems.slice(0, 4);
+const lostItems = [mockItems[1], mockItems[4], mockItems[0], mockItems[3]];
 
-  useEffect(() => {
-    async function loadItems() {
-      try {
-        const response = await api.get("/items");
-        setItems(response.data);
-      } catch {
-        Alert.alert("Erro", "Não foi possível carregar os itens.");
-      } finally {
-        setLoading(false);
-      }
-    }
+const navItems = [
+  { label: "Inicio", icon: "home-outline" as const, active: true },
+  { label: "Explorar", icon: "grid-outline" as const, active: false },
+  { label: "Publicar", icon: "add-circle-outline" as const, active: false },
+  { label: "Perfil", icon: "person-outline" as const, active: false },
+];
 
-    loadItems();
-  }, []);
+const defaultCardImage = require("../assets/images/mochila.png");
 
-  if (loading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#FFC107" />
-        <Text style={styles.loadingText}>Carregando itens...</Text>
-      </View>
-    );
+function getBadgeStyle(status: MockItem["status"]) {
+  if (status === "Achado") {
+    return {
+      color: "#12B76A",
+      backgroundColor: "#FFFFFF",
+    };
   }
 
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>VoltaPraMim</Text>
-      <Text style={styles.subtitle}>Itens encontrados</Text>
+  if (status === "Devolvido") {
+    return {
+      color: "#7A5AF8",
+      backgroundColor: "#FFFFFF",
+    };
+  }
 
-      <FlatList
-        data={items}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>{item.title}</Text>
-            <Text style={styles.cardLocation}>Local: {item.location}</Text>
-            <Text style={styles.cardDescription}>{item.description}</Text>
+  return {
+    color: "#3552B2",
+    backgroundColor: "#FFFFFF",
+  };
+}
+
+function getCardTitle(title: MockItem["title"]) {
+  if (title.toLowerCase().includes("mochila")) return "Black School Bag";
+  if (title.toLowerCase().includes("carteira")) return "Brown Wallet";
+  if (title.toLowerCase().includes("fone")) return "Bluetooth Earbuds";
+  if (title.toLowerCase().includes("cracha")) return "ID Badge";
+  if (title.toLowerCase().includes("garrafa")) return "Bottle";
+  return "Lost Item";
+}
+
+function ItemCard({ item }: { item: MockItem }) {
+  const badgeStyle = getBadgeStyle(item.status);
+
+  return (
+    <Pressable
+      style={styles.itemCard}
+      onPress={() => Alert.alert("Visual", "Essa tela esta sendo montada apenas como prototipo visual.")}
+    >
+      <View style={styles.thumbnail}>
+        <View style={styles.thumbnailBadgeWrap}>
+          <Text
+            style={[
+              styles.thumbnailBadge,
+              {
+                color: badgeStyle.color,
+                backgroundColor: badgeStyle.backgroundColor,
+              },
+            ]}
+          >
+            {item.status}
+          </Text>
+        </View>
+        <Image
+          source={defaultCardImage}
+          style={styles.thumbnailImage}
+          resizeMode="cover"
+        />
+      </View>
+
+      <Text style={styles.itemTitle} numberOfLines={2}>
+        {getCardTitle(item.title)}
+      </Text>
+      <Text style={styles.itemDate}>Jan 17, 2024</Text>
+
+      <View style={styles.locationRow}>
+        <Ionicons name="location" size={12} color="#3552B2" />
+        <Text style={styles.locationText}>Lapaz</Text>
+      </View>
+    </Pressable>
+  );
+}
+
+function ItemSection({
+  title,
+  items,
+}: {
+  title: string;
+  items: MockItem[];
+}) {
+  return (
+    <View style={styles.section}>
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>{title}</Text>
+        <TouchableOpacity
+          hitSlop={8}
+          onPress={() => Alert.alert("Visual", "O botao 'Ver todos' e apenas ilustrativo por enquanto.")}
+        >
+          <Text style={styles.sectionLink}>Ver todos</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.grid}>
+        {items.map((item) => (
+          <ItemCard key={`${title}-${item.id}`} item={item} />
+        ))}
+      </View>
+    </View>
+  );
+}
+
+export default function HomeScreen() {
+  return (
+    <View style={styles.screen}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.header}>
+          <View style={styles.headerTopRow}>
+            <View style={styles.profileWrap}>
+              <View style={styles.avatar}>
+                <Ionicons name="person" size={22} color="#3552B2" />
+              </View>
+
+              <View>
+                <Text style={styles.profileName}>{profile.name}</Text>
+                <Text style={styles.profileEmail}>{profile.email}</Text>
+              </View>
+            </View>
+
+            <TouchableOpacity
+              style={styles.notificationButton}
+              onPress={() => Alert.alert("Visual", "Notificacoes ainda nao foram implementadas.")}
+            >
+              <Ionicons name="notifications-outline" size={20} color="#FFFFFF" />
+            </TouchableOpacity>
           </View>
-        )}
-        ListEmptyComponent={
-          <Text style={styles.emptyText}>Nenhum item encontrado.</Text>
-        }
-        contentContainerStyle={{ paddingBottom: 24 }}
-      />
+
+          <View style={styles.ctaCard}>
+            <View style={styles.ctaTextWrap}>
+              <Text style={styles.ctaTitle}>Perdeu ou encontrou um item?</Text>
+              <Text style={styles.ctaDescription}>
+                Publique aqui para alguem recuperar ou encontrar um objeto perdido
+              </Text>
+            </View>
+
+            <TouchableOpacity
+              style={styles.registerButton}
+              onPress={() => Alert.alert("Visual", "O fluxo de publicar sera montado depois.")}
+            >
+              <Text style={styles.registerButtonText}>Registrar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <ItemSection title="Itens Recentes" items={recentItems} />
+        <ItemSection title="Itens perdidos" items={lostItems} />
+      </ScrollView>
+
+      <View style={styles.bottomNav}>
+        {navItems.map((item) => (
+          <TouchableOpacity
+            key={item.label}
+            style={styles.navItem}
+            onPress={() => {
+              if (item.label === "Perfil") {
+                router.push({ pathname: "/profile" });
+                return;
+              }
+
+              Alert.alert("Visual", `A aba ${item.label} sera criada depois.`);
+            }}
+          >
+            <Ionicons
+              name={item.icon}
+              size={18}
+              color={item.active ? "#FFC726" : "#F4F7FF"}
+            />
+            <Text style={[styles.navLabel, item.active && styles.navLabelActive]}>
+              {item.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: "#3552B2",
+  },
   container: {
     flex: 1,
-    backgroundColor: "#F5F7FF",
-    paddingTop: 60,
-    paddingHorizontal: 20,
+    backgroundColor: "#F3F4F8",
   },
-  center: {
-    flex: 1,
-    backgroundColor: "#F5F7FF",
-    justifyContent: "center",
+  content: {
+    paddingBottom: 106,
+  },
+  header: {
+    backgroundColor: "#3552B2",
+    paddingHorizontal: 18,
+    paddingTop: 46,
+    paddingBottom: 18,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+  },
+  headerTopRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
+    marginBottom: 18,
   },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: "#444",
+  profileWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: "800",
-    color: "#2F4E9E",
-  },
-  subtitle: {
-    fontSize: 16,
-    color: "#666",
-    marginTop: 4,
-    marginBottom: 20,
-  },
-  card: {
+  avatar: {
+    width: 42,
+    height: 42,
+    borderRadius: 999,
     backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 14,
-    elevation: 2,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  cardTitle: {
-    fontSize: 18,
+  profileName: {
+    color: "#FFFFFF",
+    fontSize: 15,
     fontWeight: "800",
-    color: "#1F2D5A",
+  },
+  profileEmail: {
+    color: "#DDE6FF",
+    fontSize: 11,
+    marginTop: 2,
+  },
+  notificationButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 999,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  ctaCard: {
+    backgroundColor: "#FFE9E4",
+    borderRadius: 18,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 14,
+  },
+  ctaTextWrap: {
+    flex: 1,
+  },
+  ctaTitle: {
+    color: "#202020",
+    fontSize: 22,
+    lineHeight: 24,
+    fontWeight: "800",
+    marginBottom: 6,
+    maxWidth: 160,
+  },
+  ctaDescription: {
+    color: "#4F4B4B",
+    fontSize: 11.5,
+    lineHeight: 16,
+    maxWidth: 170,
+  },
+  registerButton: {
+    borderWidth: 2,
+    borderColor: "#D87537",
+    borderRadius: 999,
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  registerButtonText: {
+    color: "#3B2E2E",
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  section: {
+    paddingHorizontal: 14,
+    paddingTop: 12,
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
+    paddingHorizontal: 4,
+  },
+  sectionTitle: {
+    color: "#202020",
+    fontSize: 15,
+    fontWeight: "800",
+  },
+  sectionLink: {
+    color: "#545454",
+    fontSize: 12,
+    fontWeight: "500",
+  },
+  grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    rowGap: 10,
+  },
+  itemCard: {
+    width: "48.4%",
+    backgroundColor: "#F0F0F0",
+    borderRadius: 14,
+    padding: 6,
+    paddingBottom: 10,
+  },
+  thumbnail: {
+    height: 118,
+    borderRadius: 12,
+    backgroundColor: "#DADDE5",
+    overflow: "hidden",
     marginBottom: 8,
   },
-  cardLocation: {
-    fontSize: 14,
-    color: "#2F4E9E",
-    marginBottom: 6,
+  thumbnailBadgeWrap: {
+    position: "absolute",
+    top: 6,
+    right: 6,
+    zIndex: 2,
   },
-  cardDescription: {
-    fontSize: 14,
-    color: "#555",
+  thumbnailBadge: {
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    overflow: "hidden",
+    fontSize: 9,
+    fontWeight: "700",
   },
-  emptyText: {
-    textAlign: "center",
-    marginTop: 40,
-    color: "#666",
-    fontSize: 16,
+  thumbnailImage: {
+    width: "100%",
+    height: "100%",
+  },
+  itemTitle: {
+    color: "#101010",
+    fontSize: 12.5,
+    fontWeight: "800",
+    marginBottom: 3,
+    minHeight: 32,
+  },
+  itemDate: {
+    color: "#303030",
+    fontSize: 11,
+    marginBottom: 4,
+  },
+  locationRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+  },
+  locationText: {
+    color: "#303030",
+    fontSize: 10.5,
+    flex: 1,
+  },
+  bottomNav: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "#3552B2",
+    borderTopLeftRadius: 14,
+    borderTopRightRadius: 14,
+    flexDirection: "row",
+    justifyContent: "space-around",
+    paddingTop: 10,
+    paddingBottom: 14,
+  },
+  navItem: {
+    alignItems: "center",
+    justifyContent: "center",
+    minWidth: 60,
+  },
+  navLabel: {
+    marginTop: 3,
+    color: "#F4F7FF",
+    fontSize: 10,
+    fontWeight: "500",
+  },
+  navLabelActive: {
+    color: "#FFC726",
+    fontWeight: "700",
   },
 });
