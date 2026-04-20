@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
-import { getAccessMode, getUser, AccessMode, User } from "@/services/auth.storage";
+import { getAccessMode, AccessMode } from "@/services/auth.storage";
 import { router } from "expo-router";
 import {
   Alert,
@@ -136,29 +136,6 @@ function ItemSection({ title, items }: { title: string; items: MockItem[] }) {
 }
 
 export default function HomeScreen() {
-  const [accessMode, setAccessMode] = useState<AccessMode | null>(null);
-  const [user, setUser] = useState<User | null>(null);
-
-  useEffect(() => {
-    async function loadSession() {
-      const [storedAccessMode, storedUser] = await Promise.all([
-        getAccessMode(),
-        getUser(),
-      ]);
-
-      setAccessMode(storedAccessMode);
-      setUser(storedUser);
-    }
-
-    loadSession();
-  }, []);
-
-  const isGuest = accessMode === "guest";
-  const profileName = isGuest ? "Modo visitante" : user?.name || profile.name;
-  const profileEmail = isGuest
-    ? "Visualizacao limitada"
-    : user?.email || profile.email;
-
   return (
     <View style={styles.screen}>
       <ScrollView
@@ -174,8 +151,8 @@ export default function HomeScreen() {
               </View>
 
               <View>
-                <Text style={styles.profileName}>{profileName}</Text>
-                <Text style={styles.profileEmail}>{profileEmail}</Text>
+                <Text style={styles.profileName}>{profile.name}</Text>
+                <Text style={styles.profileEmail}>{profile.email}</Text>
               </View>
             </View>
 
@@ -208,34 +185,16 @@ export default function HomeScreen() {
             <TouchableOpacity
               style={styles.registerButton}
               onPress={() =>
-                isGuest
-                  ? router.push("/login")
-                  : router.push("/publish")
+                Alert.alert(
+                  "Visual",
+                  "O fluxo de publicar sera montado depois.",
+                )
               }
             >
-              <Text style={styles.registerButtonText}>
-                {isGuest ? "Entrar com RA" : "Registrar"}
-              </Text>
+              <Text style={styles.registerButtonText}>Registrar</Text>
             </TouchableOpacity>
           </View>
         </View>
-
-        {isGuest ? (
-          <View style={styles.guestBanner}>
-            <View style={styles.guestBannerIcon}>
-              <Ionicons name="lock-closed-outline" size={18} color="#3552B2" />
-            </View>
-            <View style={styles.guestBannerTextWrap}>
-              <Text style={styles.guestBannerTitle}>
-                Entre com seu RA para continuar
-              </Text>
-              <Text style={styles.guestBannerText}>
-                No modo visitante, voce pode visualizar os itens, mas publicar e
-                acessar o perfil completo continuam bloqueados.
-              </Text>
-            </View>
-          </View>
-        ) : null}
 
         <ItemSection title="Itens Recentes" items={recentItems} />
         <ItemSection title="Itens perdidos" items={lostItems} />
@@ -249,11 +208,6 @@ export default function HomeScreen() {
             onPress={() => {
               if (item.label === "Explorar") {
                 router.push({ pathname: "/explore" });
-                return;
-              }
-
-              if (item.label === "Publicar") {
-                router.push({ pathname: "/publish" });
                 return;
               }
 
@@ -377,37 +331,6 @@ const styles = StyleSheet.create({
     color: "#3B2E2E",
     fontSize: 14,
     fontWeight: "700",
-  },
-  guestBanner: {
-    marginHorizontal: 14,
-    marginTop: 14,
-    backgroundColor: "#EAF0FF",
-    borderRadius: 18,
-    padding: 14,
-    flexDirection: "row",
-    gap: 12,
-  },
-  guestBannerIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 999,
-    backgroundColor: "#FFFFFF",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  guestBannerTextWrap: {
-    flex: 1,
-  },
-  guestBannerTitle: {
-    color: "#203469",
-    fontSize: 14,
-    fontWeight: "800",
-    marginBottom: 4,
-  },
-  guestBannerText: {
-    color: "#42506B",
-    fontSize: 12.5,
-    lineHeight: 18,
   },
   section: {
     paddingHorizontal: 14,

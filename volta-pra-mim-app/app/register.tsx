@@ -138,7 +138,9 @@ export default function RegisterScreen() {
     >
       <View style={styles.content}>
         <TouchableOpacity
-          onPress={() => (step === "lookup" ? router.back() : setStep("lookup"))}
+          onPress={() =>
+            step === "lookup" ? router.back() : setStep("lookup")
+          }
           style={styles.backButton}
           hitSlop={10}
         >
@@ -160,10 +162,7 @@ export default function RegisterScreen() {
             ]}
           />
           <View
-            style={[
-              styles.stepDot,
-              step !== "lookup" && styles.stepDotActive,
-            ]}
+            style={[styles.stepDot, step !== "lookup" && styles.stepDotActive]}
           />
           <View
             style={[
@@ -184,8 +183,8 @@ export default function RegisterScreen() {
             <View style={styles.infoCard}>
               <Text style={styles.infoTitle}>Informe seu RA</Text>
               <Text style={styles.infoText}>
-                Se sua conta ja estiver cadastrada pela faculdade, vamos localizar
-                seus dados e liberar a criacao da senha.
+                Se sua conta ja estiver cadastrada pela faculdade, vamos
+                localizar seus dados e liberar a criacao da senha.
               </Text>
             </View>
 
@@ -237,7 +236,9 @@ export default function RegisterScreen() {
 
               <View style={styles.accountMeta}>
                 <Text style={styles.accountMetaLabel}>Telefone</Text>
-                <Text style={styles.accountMetaValue}>{foundAccount.phone}</Text>
+                <Text style={styles.accountMetaValue}>
+                  {foundAccount.phone}
+                </Text>
               </View>
             </View>
 
@@ -306,7 +307,9 @@ export default function RegisterScreen() {
                   <Ionicons name="checkmark" size={13} color="#FFFFFF" />
                 ) : null}
               </View>
-              <Text style={styles.termsText}>Concordo com os termos de uso</Text>
+              <Text style={styles.termsText}>
+                Concordo com os termos de uso
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
