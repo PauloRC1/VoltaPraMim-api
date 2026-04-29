@@ -1,10 +1,20 @@
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { router, useFocusEffect } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
 import { AccessMode, getAccessMode } from "@/services/auth.storage";
+import { AppBottomNav } from "@/components/app-bottom-nav";
+import { getItemStatusStyle } from "@/utils/item-status";
 import {
-  Alert,
-  Image,
+  ApiItem,
+  ApiItemCategory,
+  ApiItemStatus,
+  formatItemCategory,
+  formatItemDate,
+  listItems,
+} from "@/services/items";
+import { ItemImage } from "@/components/item-image";
+import {
+  ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
@@ -13,86 +23,92 @@ import {
   View,
 } from "react-native";
 
-const categories = ["Todos", "Perdidos", "Achados", "Recentes"];
-
-const items = [
-  {
-    id: "1",
-    title: "Black School Bag",
-    date: "Jan 17, 2024",
-    location: "Lapaz",
-    status: "Perdido",
-  },
-  {
-    id: "2",
-    title: "Black School Bag",
-    date: "Jan 17, 2024",
-    location: "Lapaz",
-    status: "Achado",
-  },
-  {
-    id: "3",
-    title: "Black School Bag",
-    date: "Jan 17, 2024",
-    location: "Lapaz",
-    status: "Perdido",
-  },
-  {
-    id: "4",
-    title: "Black School Bag",
-    date: "Jan 17, 2024",
-    location: "Lapaz",
-    status: "Perdido",
-  },
-  {
-    id: "5",
-    title: "Black School Bag",
-    date: "Jan 17, 2024",
-    location: "H15",
-    status: "Perdido",
-  },
-  {
-    id: "6",
-    title: "Black School Bag",
-    date: "Jan 17, 2024",
-    location: "Lapaz",
-    status: "Perdido",
-  },
+const categories = ["Todos", "Procurando", "Encontrados", "Recentes"];
+const categoryFilters: Array<ApiItemCategory | "TODOS"> = [
+  "TODOS",
+  "ELETRONICOS",
+  "MOCHILA",
+  "DOCUMENTOS",
+  "ACESSORIOS",
+  "OUTROS",
 ];
 
-const navItems = [
-  { label: "Inicio", icon: "home-outline" as const, active: false },
-  { label: "Explorar", icon: "grid-outline" as const, active: true },
-  { label: "Publicar", icon: "add-circle-outline" as const, active: false },
-  { label: "Perfil", icon: "person-outline" as const, active: false },
-];
-
-const bagImage = require("../assets/images/mochila.png");
-
-function getBadgeStyle(status: string) {
-  if (status === "Achado") {
-    return {
-      color: "#12B76A",
-      backgroundColor: "#FFFFFF",
-    };
-  }
-
-  return {
-    color: "#3552B2",
-    backgroundColor: "#FFFFFF",
-  };
+function getStatusFilter(category: string): ApiItemStatus | undefined {
+  if (category === "Procurando") return "PERDIDO";
+  if (category === "Encontrados") return "ENCONTRADO";
+  return undefined;
 }
 
 export default function ExploreScreen() {
   const [selectedCategory, setSelectedCategory] = useState("Todos");
+  const [selectedItemCategory, setSelectedItemCategory] =
+    useState<ApiItemCategory | "TODOS">("TODOS");
+  const [searchText, setSearchText] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [locationFilter, setLocationFilter] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [accessMode, setAccessMode] = useState<AccessMode | null>(null);
+  const [items, setItems] = useState<ApiItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
     getAccessMode().then(setAccessMode);
   }, []);
 
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setDebouncedSearch(searchText.trim());
+    }, 350);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchText]);
+
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+
+      async function loadItems() {
+        try {
+          setIsLoading(true);
+          setErrorMessage("");
+          const apiItems = await listItems({
+            status: getStatusFilter(selectedCategory),
+            category:
+              selectedItemCategory === "TODOS" ? undefined : selectedItemCategory,
+            search: debouncedSearch || undefined,
+            location: locationFilter.trim() || undefined,
+          });
+          if (isActive) {
+            setItems(apiItems);
+          }
+        } catch {
+          if (isActive) {
+            setErrorMessage("Não foi possível carregar os itens agora.");
+          }
+        } finally {
+          if (isActive) {
+            setIsLoading(false);
+          }
+        }
+      }
+
+      loadItems();
+
+      return () => {
+        isActive = false;
+      };
+    }, [debouncedSearch, locationFilter, selectedCategory, selectedItemCategory]),
+  );
+
   const isGuest = accessMode === "guest";
+  const hasActiveFilters =
+    selectedItemCategory !== "TODOS" || locationFilter.trim().length > 0;
+
+  function clearFilters() {
+    setSelectedItemCategory("TODOS");
+    setLocationFilter("");
+  }
 
   return (
     <View style={styles.screen}>
@@ -112,6 +128,9 @@ export default function ExploreScreen() {
               style={styles.searchInput}
               placeholder="Buscar item..."
               placeholderTextColor="#8D939B"
+              value={searchText}
+              onChangeText={setSearchText}
+              returnKeyType="search"
             />
           </View>
 
@@ -147,26 +166,65 @@ export default function ExploreScreen() {
         {showFilters ? (
           <View style={styles.filtersCard}>
             <Text style={styles.filterLabel}>Categoria</Text>
-            <View style={styles.selectBox}>
-              <Text style={styles.selectText}>Mochila</Text>
-              <Ionicons name="chevron-down-outline" size={18} color="#555" />
+            <View style={styles.filterChips}>
+              {categoryFilters.map((category) => {
+                const isActive = selectedItemCategory === category;
+                const label =
+                  category === "TODOS" ? "Todas" : formatItemCategory(category);
+
+                return (
+                  <TouchableOpacity
+                    key={category}
+                    style={[
+                      styles.filterChip,
+                      isActive && styles.filterChipActive,
+                    ]}
+                    onPress={() => setSelectedItemCategory(category)}
+                  >
+                    <Text
+                      style={[
+                        styles.filterChipText,
+                        isActive && styles.filterChipTextActive,
+                      ]}
+                    >
+                      {label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
 
             <Text style={[styles.filterLabel, styles.filterSpacing]}>
-              Select Location
+              Local
             </Text>
-            <View style={styles.selectBox}>
-              <Text style={styles.selectText}>Predio H15</Text>
-              <Ionicons name="chevron-down-outline" size={18} color="#555" />
+            <View style={styles.locationInputWrap}>
+              <Ionicons name="location-outline" size={17} color="#667085" />
+              <TextInput
+                style={styles.locationInput}
+                placeholder="Ex.: Prédio H15"
+                placeholderTextColor="#8D939B"
+                value={locationFilter}
+                onChangeText={setLocationFilter}
+                returnKeyType="search"
+              />
             </View>
 
             <TouchableOpacity
-              style={styles.applyButton}
-              onPress={() =>
-                Alert.alert("Visual", "Os filtros ainda sao apenas mock.")
-              }
+              style={[
+                styles.applyButton,
+                !hasActiveFilters && styles.applyButtonDisabled,
+              ]}
+              onPress={clearFilters}
+              disabled={!hasActiveFilters}
             >
-              <Text style={styles.applyButtonText}>Aplicar Filtro</Text>
+              <Text
+                style={[
+                  styles.applyButtonText,
+                  !hasActiveFilters && styles.applyButtonTextDisabled,
+                ]}
+              >
+                Limpar filtros
+              </Text>
             </TouchableOpacity>
           </View>
         ) : null}
@@ -189,11 +247,35 @@ export default function ExploreScreen() {
           ))}
         </View>
 
-        <Text style={styles.resultsTitle}>Resultados da busca</Text>
+        <Text style={styles.resultsTitle}>
+          {debouncedSearch || hasActiveFilters
+            ? "Resultados filtrados"
+            : "Resultados da busca"}
+        </Text>
 
-        <View style={styles.grid}>
-          {items.map((item) => {
-            const badgeStyle = getBadgeStyle(item.status);
+        {isLoading ? (
+          <View style={styles.feedbackCard}>
+            <ActivityIndicator size="small" color="#3552B2" />
+            <Text style={styles.feedbackText}>Carregando itens...</Text>
+          </View>
+        ) : errorMessage ? (
+          <View style={styles.feedbackCard}>
+            <Ionicons name="cloud-offline-outline" size={24} color="#3552B2" />
+            <Text style={styles.feedbackTitle}>Ops, algo falhou</Text>
+            <Text style={styles.feedbackText}>{errorMessage}</Text>
+          </View>
+        ) : items.length === 0 ? (
+          <View style={styles.feedbackCard}>
+            <Ionicons name="search-outline" size={24} color="#3552B2" />
+            <Text style={styles.feedbackTitle}>Nenhum item por aqui</Text>
+            <Text style={styles.feedbackText}>
+              Ajuste a busca ou os filtros para tentar novamente.
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.grid}>
+            {items.map((item) => {
+            const badgeStyle = getItemStatusStyle(item.status);
 
             return (
               <TouchableOpacity
@@ -201,10 +283,10 @@ export default function ExploreScreen() {
                 style={styles.card}
                 activeOpacity={0.85}
                 onPress={() =>
-                  Alert.alert(
-                    "Visual",
-                    "O detalhe do item sera ligado depois.",
-                  )
+                  router.push({
+                    pathname: "/items/[id]",
+                    params: { id: item.id },
+                  })
                 }
               >
                 <View style={styles.imageWrap}>
@@ -214,23 +296,22 @@ export default function ExploreScreen() {
                         styles.badge,
                         {
                           color: badgeStyle.color,
-                          backgroundColor: badgeStyle.backgroundColor,
                         },
                       ]}
                     >
-                      {item.status}
+                      {badgeStyle.label}
                     </Text>
                   </View>
 
-                  <Image
-                    source={bagImage}
+                  <ItemImage
+                    imageUrl={item.imageUrl}
                     style={styles.image}
                     resizeMode="cover"
                   />
                 </View>
 
                 <Text style={styles.cardTitle}>{item.title}</Text>
-                <Text style={styles.cardDate}>{item.date}</Text>
+                <Text style={styles.cardDate}>{formatItemDate(item.date)}</Text>
 
                 <View style={styles.locationRow}>
                   <Ionicons name="location" size={12} color="#3552B2" />
@@ -238,48 +319,12 @@ export default function ExploreScreen() {
                 </View>
               </TouchableOpacity>
             );
-          })}
-        </View>
+            })}
+          </View>
+        )}
       </ScrollView>
 
-      <View style={styles.bottomNav}>
-        {navItems.map((item) => (
-          <TouchableOpacity
-            key={item.label}
-            style={styles.navItem}
-            onPress={() => {
-              if (item.label === "Inicio") {
-                router.push({ pathname: "/home" });
-                return;
-              }
-
-              if (item.label === "Publicar") {
-                router.push({ pathname: "/publish" });
-                return;
-              }
-
-              if (item.label === "Perfil") {
-                router.push({ pathname: "/profile" });
-                return;
-              }
-
-              Alert.alert(
-                "Visual",
-                `A aba ${item.label} sera ajustada depois.`,
-              );
-            }}
-          >
-            <Ionicons
-              name={item.icon}
-              size={18}
-              color={item.active ? "#FFC726" : "#F4F7FF"}
-            />
-            <Text style={[styles.navLabel, item.active && styles.navLabelActive]}>
-              {item.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+      <AppBottomNav activeTab="explore" />
     </View>
   );
 }
@@ -299,8 +344,8 @@ const styles = StyleSheet.create({
   topBar: {
     backgroundColor: "#3552B2",
     paddingHorizontal: 18,
-    paddingTop: 16,
-    paddingBottom: 14,
+    paddingTop: 46,
+    paddingBottom: 16,
   },
   topBarTitle: {
     color: "#FFFFFF",
@@ -383,7 +428,34 @@ const styles = StyleSheet.create({
   filterSpacing: {
     marginTop: 10,
   },
-  selectBox: {
+  filterChips: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  filterChip: {
+    minHeight: 34,
+    borderRadius: 999,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#E4E7EC",
+    paddingHorizontal: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  filterChipActive: {
+    backgroundColor: "#EAF0FF",
+    borderColor: "#3552B2",
+  },
+  filterChipText: {
+    color: "#111111",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  filterChipTextActive: {
+    color: "#3552B2",
+  },
+  locationInputWrap: {
     height: 42,
     borderRadius: 8,
     backgroundColor: "#FFFFFF",
@@ -391,10 +463,11 @@ const styles = StyleSheet.create({
     borderColor: "#E4E7EC",
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
     paddingHorizontal: 12,
   },
-  selectText: {
+  locationInput: {
+    flex: 1,
+    marginLeft: 6,
     color: "#111111",
     fontSize: 13,
   },
@@ -406,10 +479,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  applyButtonDisabled: {
+    backgroundColor: "#E3E6EE",
+  },
   applyButtonText: {
     color: "#FFFFFF",
     fontSize: 13,
     fontWeight: "700",
+  },
+  applyButtonTextDisabled: {
+    color: "#8D939B",
   },
   categoriesRow: {
     flexDirection: "row",
@@ -440,6 +519,27 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     rowGap: 10,
   },
+  feedbackCard: {
+    marginHorizontal: 18,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 18,
+    padding: 20,
+    alignItems: "center",
+  },
+  feedbackTitle: {
+    color: "#151922",
+    fontSize: 16,
+    fontWeight: "800",
+    marginTop: 10,
+    marginBottom: 4,
+  },
+  feedbackText: {
+    color: "#667085",
+    fontSize: 13,
+    lineHeight: 19,
+    textAlign: "center",
+    marginTop: 8,
+  },
   card: {
     width: "48%",
     backgroundColor: "#ECECEC",
@@ -461,6 +561,7 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   badge: {
+    backgroundColor: "#FFFFFF",
     borderRadius: 999,
     paddingHorizontal: 8,
     paddingVertical: 3,
@@ -491,33 +592,5 @@ const styles = StyleSheet.create({
   locationText: {
     color: "#333333",
     fontSize: 10.5,
-  },
-  bottomNav: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "#3552B2",
-    borderTopLeftRadius: 14,
-    borderTopRightRadius: 14,
-    flexDirection: "row",
-    justifyContent: "space-around",
-    paddingTop: 10,
-    paddingBottom: 14,
-  },
-  navItem: {
-    alignItems: "center",
-    justifyContent: "center",
-    minWidth: 60,
-  },
-  navLabel: {
-    marginTop: 3,
-    color: "#F4F7FF",
-    fontSize: 10,
-    fontWeight: "500",
-  },
-  navLabelActive: {
-    color: "#FFC726",
-    fontWeight: "700",
   },
 });

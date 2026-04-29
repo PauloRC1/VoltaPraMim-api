@@ -6,7 +6,7 @@ export async function verifyJWT(request: FastifyRequest, reply: FastifyReply) {
 
     const user = request.user as { sub: string };
 
-    (request as any).userId = user.sub;
+    request.userId = user.sub;
   } catch (error) {
     return reply.status(401).send({ message: "Token inválido" });
   }

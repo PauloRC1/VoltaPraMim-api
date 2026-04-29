@@ -1,51 +1,78 @@
-import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
-import { mockItems } from "@/data/mock-items";
+import { getItemStatusLabel } from "@/utils/item-status";
+import { ApiItem, formatItemCategory, formatItemDate, listItems } from "@/services/items";
 
 export default function ItemsScreen() {
+  const [items, setItems] = useState<ApiItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadItems() {
+      try {
+        const apiItems = await listItems();
+        setItems(apiItems);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadItems();
+  }, []);
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.eyebrow}>Lista completa</Text>
         <Text style={styles.title}>Itens publicados</Text>
         <Text style={styles.subtitle}>
-          Visualizacao demonstrativa com dados mockados para o frontend.
+          Lista completa com as publicacoes carregadas da API.
         </Text>
       </View>
 
-      <FlatList
-        data={mockItems}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <Pressable
-            style={styles.card}
-            onPress={() =>
-              router.push({
-                pathname: "/items/[id]",
-                params: { id: item.id },
-              })
-            }
-          >
-            <View style={[styles.iconBlock, { backgroundColor: item.color }]}>
-              <Text style={styles.iconText}>{item.category.slice(0, 2)}</Text>
-            </View>
-
-            <View style={styles.cardContent}>
-              <View style={styles.row}>
-                <Text style={styles.badge}>{item.status}</Text>
-                <Text style={styles.date}>{item.dateLabel}</Text>
+      {isLoading ? (
+        <View style={styles.loadingCard}>
+          <ActivityIndicator size="small" color="#3552B2" />
+          <Text style={styles.loadingText}>Carregando itens...</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={items}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <Pressable
+              style={styles.card}
+              onPress={() =>
+                router.push({
+                  pathname: "/items/[id]",
+                  params: { id: item.id },
+                })
+              }
+            >
+              <View style={styles.iconBlock}>
+                <Text style={styles.iconText}>
+                  {formatItemCategory(item.category).slice(0, 2)}
+                </Text>
               </View>
 
-              <Text style={styles.cardTitle}>{item.title}</Text>
-              <Text style={styles.cardLocation}>{item.location}</Text>
-              <Text style={styles.cardDescription} numberOfLines={2}>
-                {item.description}
-              </Text>
-            </View>
-          </Pressable>
-        )}
-        contentContainerStyle={styles.listContent}
-      />
+              <View style={styles.cardContent}>
+                <View style={styles.row}>
+                  <Text style={styles.badge}>{getItemStatusLabel(item.status)}</Text>
+                  <Text style={styles.date}>{formatItemDate(item.date)}</Text>
+                </View>
+
+                <Text style={styles.cardTitle}>{item.title}</Text>
+                <Text style={styles.cardLocation}>{item.location}</Text>
+                <Text style={styles.cardDescription} numberOfLines={2}>
+                  {item.description}
+                </Text>
+              </View>
+            </Pressable>
+          )}
+          contentContainerStyle={styles.listContent}
+        />
+      )}
     </View>
   );
 }
@@ -93,6 +120,7 @@ const styles = StyleSheet.create({
     width: 58,
     height: 58,
     borderRadius: 18,
+    backgroundColor: "#3552B2",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -142,5 +170,16 @@ const styles = StyleSheet.create({
     color: "#5E6678",
     fontSize: 13,
     lineHeight: 19,
+  },
+  loadingCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 18,
+    padding: 20,
+    alignItems: "center",
+  },
+  loadingText: {
+    color: "#667085",
+    fontSize: 13,
+    marginTop: 8,
   },
 });

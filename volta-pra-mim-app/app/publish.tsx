@@ -2,6 +2,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { AccessMode, getAccessMode } from "@/services/auth.storage";
+import { api } from "@/services/api";
+import { AppBottomNav } from "@/components/app-bottom-nav";
 import {
   ActivityIndicator,
   Alert,
@@ -14,20 +16,85 @@ import {
   View,
 } from "react-native";
 
-const navItems = [
-  { label: "Inicio", icon: "home-outline" as const, active: false },
-  { label: "Explorar", icon: "grid-outline" as const, active: false },
-  { label: "Publicar", icon: "add-circle-outline" as const, active: true },
-  { label: "Perfil", icon: "person-outline" as const, active: false },
+type ItemCategory =
+  | "ELETRONICOS"
+  | "MOCHILA"
+  | "DOCUMENTOS"
+  | "ACESSORIOS"
+  | "OUTROS";
+
+const categories: { label: string; value: ItemCategory; icon: keyof typeof Ionicons.glyphMap }[] = [
+  { label: "Eletronicos", value: "ELETRONICOS", icon: "phone-portrait-outline" },
+  { label: "Mochila", value: "MOCHILA", icon: "bag-outline" },
+  { label: "Documentos", value: "DOCUMENTOS", icon: "card-outline" },
+  { label: "Acessorios", value: "ACESSORIOS", icon: "watch-outline" },
+  { label: "Outros", value: "OUTROS", icon: "ellipsis-horizontal-circle-outline" },
 ];
 
 export default function PublishScreen() {
   const [hidePhone, setHidePhone] = useState(false);
   const [accessMode, setAccessMode] = useState<AccessMode | null>(null);
+  const [itemStatus, setItemStatus] = useState<"PERDIDO" | "ENCONTRADO">(
+    "PERDIDO",
+  );
+  const [category, setCategory] = useState<ItemCategory>("MOCHILA");
+  const [title, setTitle] = useState("");
+  const [location, setLocation] = useState("");
+  const [date, setDate] = useState("");
+  const [description, setDescription] = useState("");
+  const [contactPhone, setContactPhone] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     getAccessMode().then(setAccessMode);
   }, []);
+
+  function normalizeDate(value: string) {
+    const trimmedValue = value.trim();
+    const brazilianDate = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(trimmedValue);
+
+    if (brazilianDate) {
+      const [, day, month, year] = brazilianDate;
+      return `${year}-${month}-${day}T12:00:00.000Z`;
+    }
+
+    return trimmedValue;
+  }
+
+  async function handlePublish() {
+    if (!title.trim() || !location.trim() || !date.trim() || !description.trim()) {
+      Alert.alert("Erro", "Preencha todos os campos obrigatorios.");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+
+      await api.post("/items", {
+        title: title.trim(),
+        description: description.trim(),
+        category,
+        status: itemStatus,
+        location: location.trim(),
+        date: normalizeDate(date),
+      });
+
+      Alert.alert("Item publicado", "O item foi cadastrado com sucesso.", [
+        {
+          text: "OK",
+          onPress: () => router.replace("/home"),
+        },
+      ]);
+    } catch (error: any) {
+      const message =
+        error.response?.data?.message ||
+        "Nao foi possivel publicar o item. Verifique sua conexao e tente novamente.";
+
+      Alert.alert("Erro", message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 
   if (accessMode === null) {
     return (
@@ -97,27 +164,73 @@ export default function PublishScreen() {
         <View style={styles.headerCard}>
           <Text style={styles.headerTitle}>Registrar item</Text>
           <Text style={styles.headerText}>
-            Preencha as informacoes abaixo para publicar um item perdido ou
-            achado.
+            Conte o que aconteceu para ajudar a comunidade a encontrar ou
+            devolver o item.
           </Text>
         </View>
 
         <View style={styles.form}>
           <View style={styles.fieldGroup}>
-            <Text style={styles.label}>Tipo</Text>
+            <Text style={styles.label}>O que aconteceu?</Text>
             <View style={styles.optionRow}>
               <TouchableOpacity
-                style={[styles.typeButton, styles.typeButtonActive]}
+                style={[
+                  styles.intentCard,
+                  itemStatus === "PERDIDO" && styles.typeButtonActive,
+                ]}
+                onPress={() => setItemStatus("PERDIDO")}
               >
+                <Ionicons
+                  name="search-outline"
+                  size={20}
+                  color={itemStatus === "PERDIDO" ? "#FFFFFF" : "#3552B2"}
+                />
                 <Text
-                  style={[styles.typeButtonText, styles.typeButtonTextActive]}
+                  style={[
+                    styles.intentTitle,
+                    itemStatus === "PERDIDO" && styles.typeButtonTextActive,
+                  ]}
                 >
-                  Perdido
+                  Perdi um item
+                </Text>
+                <Text
+                  style={[
+                    styles.intentText,
+                    itemStatus === "PERDIDO" && styles.intentTextActive,
+                  ]}
+                >
+                  Quero avisar que estou procurando.
                 </Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.typeButton}>
-                <Text style={styles.typeButtonText}>Achado</Text>
+              <TouchableOpacity
+                style={[
+                  styles.intentCard,
+                  itemStatus === "ENCONTRADO" && styles.typeButtonActive,
+                ]}
+                onPress={() => setItemStatus("ENCONTRADO")}
+              >
+                <Ionicons
+                  name="hand-left-outline"
+                  size={20}
+                  color={itemStatus === "ENCONTRADO" ? "#FFFFFF" : "#3552B2"}
+                />
+                <Text
+                  style={[
+                    styles.intentTitle,
+                    itemStatus === "ENCONTRADO" && styles.typeButtonTextActive,
+                  ]}
+                >
+                  Encontrei um item
+                </Text>
+                <Text
+                  style={[
+                    styles.intentText,
+                    itemStatus === "ENCONTRADO" && styles.intentTextActive,
+                  ]}
+                >
+                  Quero ajudar o dono a recuperar.
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -128,29 +241,55 @@ export default function PublishScreen() {
               style={styles.input}
               placeholder="Ex: Mochila preta com caderno"
               placeholderTextColor="#8A8F98"
+              value={title}
+              onChangeText={setTitle}
             />
           </View>
 
           <View style={styles.fieldGroup}>
             <Text style={styles.label}>Categoria</Text>
-            <View style={styles.selectBox}>
-              <Text style={styles.selectText}>Mochila</Text>
-              <Ionicons name="chevron-down-outline" size={18} color="#555" />
+            <View style={styles.categoryGrid}>
+              {categories.map((item) => {
+                const isSelected = category === item.value;
+
+                return (
+                  <TouchableOpacity
+                    key={item.value}
+                    style={[
+                      styles.categoryChip,
+                      isSelected && styles.categoryChipActive,
+                    ]}
+                    activeOpacity={0.85}
+                    onPress={() => setCategory(item.value)}
+                  >
+                    <Ionicons
+                      name={item.icon}
+                      size={17}
+                      color={isSelected ? "#FFFFFF" : "#3552B2"}
+                    />
+                    <Text
+                      style={[
+                        styles.categoryChipText,
+                        isSelected && styles.categoryChipTextActive,
+                      ]}
+                    >
+                      {item.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           </View>
 
           <View style={styles.fieldGroup}>
             <Text style={styles.label}>Local</Text>
-            <TouchableOpacity
-              style={styles.selectBox}
-              onPress={() =>
-                Alert.alert("Visual", "A selecao de local sera implementada depois.")
-              }
-              activeOpacity={0.85}
-            >
-              <Text style={styles.selectText}>Predio H15</Text>
-              <Ionicons name="location-outline" size={18} color="#3552B2" />
-            </TouchableOpacity>
+            <TextInput
+              style={styles.input}
+              placeholder="Ex: Predio H15"
+              placeholderTextColor="#8A8F98"
+              value={location}
+              onChangeText={setLocation}
+            />
           </View>
 
           <View style={styles.fieldGroup}>
@@ -159,6 +298,8 @@ export default function PublishScreen() {
               style={styles.input}
               placeholder="Ex: 08/04/2026"
               placeholderTextColor="#8A8F98"
+              value={date}
+              onChangeText={setDate}
             />
           </View>
 
@@ -170,6 +311,20 @@ export default function PublishScreen() {
               placeholderTextColor="#8A8F98"
               multiline
               textAlignVertical="top"
+              value={description}
+              onChangeText={setDescription}
+            />
+          </View>
+
+          <View style={styles.fieldGroup}>
+            <Text style={styles.label}>Telefone para contato</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Ex: (11) 99876-5432"
+              placeholderTextColor="#8A8F98"
+              keyboardType="phone-pad"
+              value={contactPhone}
+              onChangeText={setContactPhone}
             />
           </View>
 
@@ -207,12 +362,15 @@ export default function PublishScreen() {
           </Pressable>
 
           <TouchableOpacity
-            style={styles.publishButton}
-            onPress={() =>
-              Alert.alert("Visual", "Publicacao criada apenas no mock.")
-            }
+            style={[styles.publishButton, isSubmitting && styles.buttonDisabled]}
+            onPress={handlePublish}
+            disabled={isSubmitting}
           >
-            <Text style={styles.publishButtonText}>Publicar item</Text>
+            {isSubmitting ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text style={styles.publishButtonText}>Publicar item</Text>
+            )}
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -224,43 +382,7 @@ export default function PublishScreen() {
         </View>
       </ScrollView>
 
-      <View style={styles.bottomNav}>
-        {navItems.map((item) => (
-          <TouchableOpacity
-            key={item.label}
-            style={styles.navItem}
-            onPress={() => {
-              if (item.label === "Inicio") {
-                router.push("/home");
-                return;
-              }
-
-              if (item.label === "Explorar") {
-                router.push("/explore");
-                return;
-              }
-
-              if (item.label === "Perfil") {
-                router.push("/profile");
-                return;
-              }
-
-              Alert.alert("Visual", `A aba ${item.label} ja esta aberta.`);
-            }}
-          >
-            <Ionicons
-              name={item.icon}
-              size={18}
-              color={item.active ? "#FFC726" : "#F4F7FF"}
-            />
-            <Text
-              style={[styles.navLabel, item.active && styles.navLabelActive]}
-            >
-              {item.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+      <AppBottomNav activeTab="publish" />
     </View>
   );
 }
@@ -367,13 +489,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#F6F7FB",
   },
   content: {
-    paddingBottom: 110,
+    paddingBottom: 138,
   },
   topBar: {
     backgroundColor: "#3552B2",
     paddingHorizontal: 18,
-    paddingTop: 16,
-    paddingBottom: 14,
+    paddingTop: 46,
+    paddingBottom: 16,
   },
   topBarTitle: {
     color: "#FFFFFF",
@@ -415,6 +537,33 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 10,
   },
+  intentCard: {
+    flex: 1,
+    minHeight: 112,
+    borderRadius: 18,
+    borderWidth: 1.5,
+    borderColor: "#D3D8E2",
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 12,
+    paddingVertical: 14,
+    justifyContent: "center",
+  },
+  intentTitle: {
+    color: "#344054",
+    fontSize: 13.5,
+    fontWeight: "800",
+    marginTop: 8,
+    marginBottom: 5,
+  },
+  intentText: {
+    color: "#667085",
+    fontSize: 11.5,
+    lineHeight: 16,
+    fontWeight: "600",
+  },
+  intentTextActive: {
+    color: "#EAF0FF",
+  },
   typeButton: {
     flex: 1,
     height: 42,
@@ -435,6 +584,34 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   typeButtonTextActive: {
+    color: "#FFFFFF",
+  },
+  categoryGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  categoryChip: {
+    minHeight: 42,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "#D4D8DF",
+    backgroundColor: "#FFFFFF",
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    gap: 7,
+  },
+  categoryChipActive: {
+    backgroundColor: "#3552B2",
+    borderColor: "#3552B2",
+  },
+  categoryChipText: {
+    color: "#344054",
+    fontSize: 12.5,
+    fontWeight: "800",
+  },
+  categoryChipTextActive: {
     color: "#FFFFFF",
   },
   input: {
@@ -534,6 +711,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "800",
   },
+  buttonDisabled: {
+    opacity: 0.7,
+  },
   cancelButton: {
     height: 52,
     borderRadius: 999,
@@ -545,33 +725,5 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 15,
     fontWeight: "800",
-  },
-  bottomNav: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "#3552B2",
-    borderTopLeftRadius: 14,
-    borderTopRightRadius: 14,
-    flexDirection: "row",
-    justifyContent: "space-around",
-    paddingTop: 10,
-    paddingBottom: 14,
-  },
-  navItem: {
-    alignItems: "center",
-    justifyContent: "center",
-    minWidth: 60,
-  },
-  navLabel: {
-    marginTop: 3,
-    color: "#F4F7FF",
-    fontSize: 10,
-    fontWeight: "500",
-  },
-  navLabelActive: {
-    color: "#FFC726",
-    fontWeight: "700",
   },
 });

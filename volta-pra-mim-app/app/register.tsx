@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { api } from "@/services/api";
 
 type InstitutionalAccount = {
   ra: string;
@@ -111,10 +112,21 @@ export default function RegisterScreen() {
       return;
     }
 
+    if (!foundAccount) {
+      Alert.alert("Erro", "Localize sua conta institucional antes de continuar.");
+      return;
+    }
+
     try {
       setLoading(true);
 
-      await new Promise((resolve) => setTimeout(resolve, 900));
+      await api.post("/register", {
+        name: foundAccount.name,
+        email: foundAccount.email,
+        ra: foundAccount.ra,
+        phone: foundAccount.phone,
+        password: normalizedPassword,
+      });
 
       Alert.alert(
         "Conta ativada",
@@ -126,6 +138,12 @@ export default function RegisterScreen() {
           },
         ],
       );
+    } catch (error: any) {
+      const message =
+        error.response?.data?.message ||
+        "Nao foi possivel ativar sua conta. Verifique se o backend esta rodando e tente novamente.";
+
+      Alert.alert("Erro ao ativar conta", message);
     } finally {
       setLoading(false);
     }

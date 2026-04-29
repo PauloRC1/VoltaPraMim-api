@@ -17,14 +17,18 @@ export async function createItem(request: FastifyRequest, reply: FastifyReply) {
   }
 
   const body = parsed.data;
-  const userId = (request as any).userId as string;
+  const userId = request.userId;
+
+  if (!userId) {
+    return reply.code(401).send({ message: "Token inválido" });
+  }
 
   const item = await prisma.item.create({
     data: {
       title: body.title,
       description: body.description,
       category: body.category,
-      status: "ENCONTRADO",
+      status: body.status ?? "ENCONTRADO",
       location: body.location,
       date: new Date(body.date),
       imageUrl: body.imageUrl ?? null,
@@ -56,6 +60,14 @@ export async function listItems(request: FastifyRequest, reply: FastifyReply) {
     where: {
       ...(query.status ? { status: query.status } : {}),
       ...(query.category ? { category: query.category } : {}),
+      ...(query.location
+        ? {
+            location: {
+              contains: query.location,
+              mode: "insensitive",
+            },
+          }
+        : {}),
       ...(query.search
         ? {
             OR: [
@@ -67,6 +79,12 @@ export async function listItems(request: FastifyRequest, reply: FastifyReply) {
               },
               {
                 description: {
+                  contains: query.search,
+                  mode: "insensitive",
+                },
+              },
+              {
+                location: {
                   contains: query.search,
                   mode: "insensitive",
                 },
@@ -115,7 +133,11 @@ export async function markAsReturned(
   reply: FastifyReply,
 ) {
   const params = request.params as { id: string };
-  const userId = (request as any).userId as string;
+  const userId = request.userId;
+
+  if (!userId) {
+    return reply.code(401).send({ message: "Token inválido" });
+  }
 
   const item = await prisma.item.findUnique({
     where: { id: params.id },
@@ -143,7 +165,11 @@ export async function markAsReturned(
 
 export async function editItem(request: FastifyRequest, reply: FastifyReply) {
   const params = request.params as { id: string };
-  const userId = (request as any).userId as string;
+  const userId = request.userId;
+
+  if (!userId) {
+    return reply.code(401).send({ message: "Token inválido" });
+  }
 
   const parsed = editItemSchema.safeParse(request.body);
 
@@ -181,7 +207,9 @@ export async function editItem(request: FastifyRequest, reply: FastifyReply) {
       ...(body.description !== undefined
         ? { description: body.description }
         : {}),
+      ...(body.category !== undefined ? { category: body.category } : {}),
       ...(body.location !== undefined ? { location: body.location } : {}),
+      ...(body.date !== undefined ? { date: new Date(body.date) } : {}),
       ...(body.imageUrl !== undefined ? { imageUrl: body.imageUrl } : {}),
     },
   });
@@ -191,7 +219,11 @@ export async function editItem(request: FastifyRequest, reply: FastifyReply) {
 
 export async function deleteItem(request: FastifyRequest, reply: FastifyReply) {
   const params = request.params as { id: string };
-  const userId = (request as any).userId as string;
+  const userId = request.userId;
+
+  if (!userId) {
+    return reply.code(401).send({ message: "Token inválido" });
+  }
 
   const item = await prisma.item.findUnique({
     where: { id: params.id },
@@ -216,7 +248,11 @@ export async function listMyItems(
   request: FastifyRequest,
   reply: FastifyReply,
 ) {
-  const userId = (request as any).userId as string;
+  const userId = request.userId;
+
+  if (!userId) {
+    return reply.status(401).send({ message: "Token inválido" });
+  }
 
   const items = await prisma.item.findMany({
     where: {

@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { AccessMode, getAccessMode, getUser, User } from "@/services/auth.storage";
+import { AppBottomNav } from "@/components/app-bottom-nav";
 import {
   ActivityIndicator,
   ScrollView,
@@ -20,6 +21,12 @@ const profile = {
 
 const actions = [
   {
+    label: "Meus itens",
+    description: "Acompanhe publicacoes e marque itens resolvidos.",
+    icon: "albums-outline" as const,
+    route: "/profile/my-items" as const,
+  },
+  {
     label: "Editar perfil",
     description: "Atualize nome, email e telefone.",
     icon: "create-outline" as const,
@@ -30,6 +37,12 @@ const actions = [
     description: "Defina uma nova senha para a conta.",
     icon: "lock-closed-outline" as const,
     route: "/profile/change-password" as const,
+  },
+  {
+    label: "Configuracoes",
+    description: "Preferencias, ajuda e informacoes do aplicativo.",
+    icon: "settings-outline" as const,
+    route: "/settings" as const,
   },
   {
     label: "Excluir conta",
@@ -68,6 +81,65 @@ export default function ProfileScreen() {
 
   if (accessMode === "guest") {
     return (
+      <View style={styles.screen}>
+        <ScrollView
+          style={styles.container}
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.header}>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => router.back()}
+              hitSlop={10}
+            >
+              <Ionicons name="arrow-back" size={22} color="#111111" />
+            </TouchableOpacity>
+
+            <Text style={styles.headerTitle}>Seu perfil</Text>
+          </View>
+
+          <View style={styles.restrictedCard}>
+            <View style={styles.restrictedIcon}>
+              <Ionicons name="person-circle-outline" size={34} color="#3552B2" />
+            </View>
+
+            <Text style={styles.restrictedTitle}>
+              Entre com seu RA para continuar
+            </Text>
+            <Text style={styles.restrictedText}>
+              O perfil completo, a edicao dos seus dados e as configuracoes da
+              conta ficam disponiveis apenas para alunos autenticados.
+            </Text>
+
+            <TouchableOpacity
+              style={styles.primaryButton}
+              onPress={() => router.replace("/login")}
+            >
+              <Text style={styles.primaryButtonText}>Entrar com RA</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.secondaryButton}
+              onPress={() => router.replace("/home")}
+            >
+              <Text style={styles.secondaryButtonText}>Voltar para home</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+
+        <AppBottomNav activeTab="profile" />
+      </View>
+    );
+  }
+
+  const profileName = user?.name || profile.name;
+  const profileRa = user?.ra || profile.ra;
+  const profileEmail = user?.email || profile.email;
+  const profilePhone = user?.phone || profile.phone;
+
+  return (
+    <View style={styles.screen}>
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.content}
@@ -85,115 +157,68 @@ export default function ProfileScreen() {
           <Text style={styles.headerTitle}>Seu perfil</Text>
         </View>
 
-        <View style={styles.restrictedCard}>
-          <View style={styles.restrictedIcon}>
-            <Ionicons name="person-circle-outline" size={34} color="#3552B2" />
+        <View style={styles.profileCard}>
+          <View style={styles.avatar}>
+            <Ionicons name="person" size={34} color="#3552B2" />
           </View>
 
-          <Text style={styles.restrictedTitle}>
-            Entre com seu RA para continuar
-          </Text>
-          <Text style={styles.restrictedText}>
-            O perfil completo, a edicao dos seus dados e as configuracoes da
-            conta ficam disponiveis apenas para alunos autenticados.
-          </Text>
-
-          <TouchableOpacity
-            style={styles.primaryButton}
-            onPress={() => router.replace("/login")}
-          >
-            <Text style={styles.primaryButtonText}>Entrar com RA</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.secondaryButton}
-            onPress={() => router.replace("/home")}
-          >
-            <Text style={styles.secondaryButtonText}>Voltar para home</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    );
-  }
-
-  const profileName = user?.name || profile.name;
-  const profileRa = user?.ra || profile.ra;
-  const profileEmail = user?.email || profile.email;
-  const profilePhone = user?.phone || profile.phone;
-
-  return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-    >
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-          hitSlop={10}
-        >
-          <Ionicons name="arrow-back" size={22} color="#111111" />
-        </TouchableOpacity>
-
-        <Text style={styles.headerTitle}>Seu perfil</Text>
-      </View>
-
-      <View style={styles.profileCard}>
-        <View style={styles.avatar}>
-          <Ionicons name="person" size={34} color="#3552B2" />
+          <Text style={styles.name}>{profileName}</Text>
+          <Text style={styles.meta}>RA: {profileRa}</Text>
+          <Text style={styles.meta}>{profileEmail}</Text>
+          <Text style={styles.meta}>{profilePhone}</Text>
         </View>
 
-        <Text style={styles.name}>{profileName}</Text>
-        <Text style={styles.meta}>RA: {profileRa}</Text>
-        <Text style={styles.meta}>{profileEmail}</Text>
-        <Text style={styles.meta}>{profilePhone}</Text>
-      </View>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Conta</Text>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Conta</Text>
-
-        {actions.map((action) => (
-          <TouchableOpacity
-            key={action.label}
-            style={styles.actionCard}
-            onPress={() => router.push({ pathname: action.route })}
-            activeOpacity={0.85}
-          >
-            <View
-              style={[
-                styles.actionIcon,
-                action.danger && styles.actionIconDanger,
-              ]}
+          {actions.map((action) => (
+            <TouchableOpacity
+              key={action.label}
+              style={styles.actionCard}
+              onPress={() => router.push({ pathname: action.route })}
+              activeOpacity={0.85}
             >
-              <Ionicons
-                name={action.icon}
-                size={20}
-                color={action.danger ? "#FF3B3B" : "#3552B2"}
-              />
-            </View>
-
-            <View style={styles.actionTextWrap}>
-              <Text
+              <View
                 style={[
-                  styles.actionTitle,
-                  action.danger && styles.actionTitleDanger,
+                  styles.actionIcon,
+                  action.danger && styles.actionIconDanger,
                 ]}
               >
-                {action.label}
-              </Text>
-              <Text style={styles.actionDescription}>{action.description}</Text>
-            </View>
+                <Ionicons
+                  name={action.icon}
+                  size={20}
+                  color={action.danger ? "#FF3B3B" : "#3552B2"}
+                />
+              </View>
 
-            <Ionicons name="chevron-forward" size={20} color="#6B7280" />
-          </TouchableOpacity>
-        ))}
-      </View>
-    </ScrollView>
+              <View style={styles.actionTextWrap}>
+                <Text
+                  style={[
+                    styles.actionTitle,
+                    action.danger && styles.actionTitleDanger,
+                  ]}
+                >
+                  {action.label}
+                </Text>
+                <Text style={styles.actionDescription}>{action.description}</Text>
+              </View>
+
+              <Ionicons name="chevron-forward" size={20} color="#6B7280" />
+            </TouchableOpacity>
+          ))}
+        </View>
+      </ScrollView>
+
+      <AppBottomNav activeTab="profile" />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: "#3552B2",
+  },
   container: {
     flex: 1,
     backgroundColor: "#F5F6FA",
@@ -207,7 +232,7 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 20,
     paddingTop: 48,
-    paddingBottom: 32,
+    paddingBottom: 110,
   },
   header: {
     flexDirection: "row",

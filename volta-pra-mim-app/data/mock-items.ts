@@ -9,6 +9,7 @@ export type MockItem = {
   status: MockItemStatus;
   dateLabel: string;
   reporterName: string;
+  ownerRa?: string;
   contactHint: string;
   color: string;
 };
@@ -23,7 +24,8 @@ export const mockItems: MockItem[] = [
     category: "Mochila",
     status: "Achado",
     dateLabel: "Hoje, 10:20",
-    reporterName: "Marina Costa",
+    reporterName: "Paulo",
+    ownerRa: "24011434",
     contactHint: "Combine a retirada na secretaria do bloco.",
     color: "#3552B2",
   },
@@ -36,7 +38,8 @@ export const mockItems: MockItem[] = [
     category: "Documentos",
     status: "Perdido",
     dateLabel: "Ontem, 18:45",
-    reporterName: "Lucas Ferreira",
+    reporterName: "Paulo",
+    ownerRa: "24011434",
     contactHint: "Verifique com a recepcao antes de ir ate o local.",
     color: "#C96A1B",
   },

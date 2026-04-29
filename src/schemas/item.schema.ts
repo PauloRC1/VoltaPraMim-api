@@ -1,32 +1,41 @@
 import { z } from "zod";
 
+const categorySchema = z.enum([
+  "ELETRONICOS",
+  "MOCHILA",
+  "DOCUMENTOS",
+  "ACESSORIOS",
+  "OUTROS",
+]);
+
 export const createItemSchema = z.object({
   title: z.string().min(1, "Título é obrigatório"),
   description: z.string().min(1, "Descrição é obrigatória"),
-  category: z.enum([
-    "ELETRONICOS",
-    "MOCHILA",
-    "DOCUMENTOS",
-    "ACESSORIOS",
-    "OUTROS",
-  ]),
+  category: categorySchema,
+  status: z.enum(["PERDIDO", "ENCONTRADO"]).optional(),
   location: z.string().min(1, "Localização é obrigatória"),
-  date: z.string().min(1, "Data é obrigatória"),
+  date: z
+    .string()
+    .min(1, "Data é obrigatória")
+    .refine((value) => !Number.isNaN(Date.parse(value)), "Data inválida"),
   imageUrl: z.string().optional(),
 });
 
 export const editItemSchema = z.object({
   title: z.string().min(1, "Título é obrigatório").optional(),
   description: z.string().min(1, "Descrição é obrigatória").optional(),
+  category: categorySchema.optional(),
   location: z.string().min(1, "Localização é obrigatória").optional(),
-  imageUrl: z.string().optional(),
+  date: z
+    .string()
+    .refine((value) => !Number.isNaN(Date.parse(value)), "Data inválida")
+    .optional(),
+  imageUrl: z.string().nullable().optional(),
 });
 
 export const listItemsQuerySchema = z.object({
   status: z.enum(["PERDIDO", "ENCONTRADO", "DEVOLVIDO"]).optional(),
-  category: z
-    .enum(["ELETRONICOS", "MOCHILA", "DOCUMENTOS", "ACESSORIOS", "OUTROS"])
-    .optional(),
-
+  category: categorySchema.optional(),
   search: z.string().optional(),
+  location: z.string().optional(),
 });

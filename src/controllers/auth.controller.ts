@@ -59,7 +59,11 @@ export async function register(request: FastifyRequest, reply: FastifyReply) {
 }
 
 export async function me(request: FastifyRequest, reply: FastifyReply) {
-  const userId = (request as any).userId as string;
+  const userId = request.userId;
+
+  if (!userId) {
+    return reply.status(401).send({ message: "Token inválido." });
+  }
 
   const user = await prisma.user.findUnique({
     where: { id: userId },

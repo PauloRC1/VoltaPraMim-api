@@ -1,10 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useEffect, useState } from "react";
-import { getAccessMode, AccessMode } from "@/services/auth.storage";
-import { router } from "expo-router";
+import { AppBottomNav } from "@/components/app-bottom-nav";
+import { router, useFocusEffect } from "expo-router";
+import { useCallback, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
-  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -12,66 +12,36 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { mockItems, MockItem } from "@/data/mock-items";
+import { getItemStatusStyle } from "@/utils/item-status";
+import { getUser, User } from "@/services/auth.storage";
+import { ApiItem, formatItemDate, listItems } from "@/services/items";
+import { ItemImage } from "@/components/item-image";
 
 const profile = {
   name: "Marcinho Branco",
   email: "marchinho.nbrc@gmail.com",
 };
 
-const recentItems = mockItems.slice(0, 4);
-const lostItems = [mockItems[1], mockItems[4], mockItems[0], mockItems[3]];
-
-const navItems = [
-  { label: "Inicio", icon: "home-outline" as const, active: true },
-  { label: "Explorar", icon: "grid-outline" as const, active: false },
-  { label: "Publicar", icon: "add-circle-outline" as const, active: false },
-  { label: "Perfil", icon: "person-outline" as const, active: false },
-];
-
-const defaultCardImage = require("../assets/images/mochila.png");
-
-function getBadgeStyle(status: MockItem["status"]) {
-  if (status === "Achado") {
-    return {
-      color: "#12B76A",
-      backgroundColor: "#FFFFFF",
-    };
-  }
-
-  if (status === "Devolvido") {
-    return {
-      color: "#7A5AF8",
-      backgroundColor: "#FFFFFF",
-    };
-  }
-
-  return {
-    color: "#3552B2",
-    backgroundColor: "#FFFFFF",
-  };
+function getCardTitle(title: string) {
+  if (title.toLowerCase().includes("mochila")) return "Mochila preta";
+  if (title.toLowerCase().includes("carteira")) return "Carteira marrom";
+  if (title.toLowerCase().includes("fone")) return "Fone bluetooth";
+  if (title.toLowerCase().includes("cracha")) return "Cracha institucional";
+  if (title.toLowerCase().includes("garrafa")) return "Garrafa termica";
+  return title;
 }
 
-function getCardTitle(title: MockItem["title"]) {
-  if (title.toLowerCase().includes("mochila")) return "Black School Bag";
-  if (title.toLowerCase().includes("carteira")) return "Brown Wallet";
-  if (title.toLowerCase().includes("fone")) return "Bluetooth Earbuds";
-  if (title.toLowerCase().includes("cracha")) return "ID Badge";
-  if (title.toLowerCase().includes("garrafa")) return "Bottle";
-  return "Lost Item";
-}
-
-function ItemCard({ item }: { item: MockItem }) {
-  const badgeStyle = getBadgeStyle(item.status);
+function ItemCard({ item }: { item: ApiItem }) {
+  const badgeStyle = getItemStatusStyle(item.status);
 
   return (
     <Pressable
       style={styles.itemCard}
       onPress={() =>
-        Alert.alert(
-          "Visual",
-          "Essa tela esta sendo montada apenas como prototipo visual.",
-        )
+        router.push({
+          pathname: "/items/[id]",
+          params: { id: item.id },
+        })
       }
     >
       <View style={styles.thumbnail}>
@@ -81,15 +51,14 @@ function ItemCard({ item }: { item: MockItem }) {
               styles.thumbnailBadge,
               {
                 color: badgeStyle.color,
-                backgroundColor: badgeStyle.backgroundColor,
               },
             ]}
           >
-            {item.status}
+            {badgeStyle.label}
           </Text>
         </View>
-        <Image
-          source={defaultCardImage}
+        <ItemImage
+          imageUrl={item.imageUrl}
           style={styles.thumbnailImage}
           resizeMode="cover"
         />
@@ -98,29 +67,28 @@ function ItemCard({ item }: { item: MockItem }) {
       <Text style={styles.itemTitle} numberOfLines={2}>
         {getCardTitle(item.title)}
       </Text>
-      <Text style={styles.itemDate}>Jan 17, 2024</Text>
+      <Text style={styles.itemDate}>{formatItemDate(item.date)}</Text>
 
       <View style={styles.locationRow}>
         <Ionicons name="location" size={12} color="#3552B2" />
-        <Text style={styles.locationText}>Lapaz</Text>
+        <Text style={styles.locationText} numberOfLines={1}>
+          {item.location}
+        </Text>
       </View>
     </Pressable>
   );
 }
 
-function ItemSection({ title, items }: { title: string; items: MockItem[] }) {
+function ItemSection({ title, items }: { title: string; items: ApiItem[] }) {
+  if (items.length === 0) return null;
+
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>{title}</Text>
         <TouchableOpacity
           hitSlop={8}
-          onPress={() =>
-            Alert.alert(
-              "Visual",
-              "O botao 'Ver todos' e apenas ilustrativo por enquanto.",
-            )
-          }
+          onPress={() => router.push({ pathname: "/explore" })}
         >
           <Text style={styles.sectionLink}>Ver todos</Text>
         </TouchableOpacity>
@@ -136,6 +104,45 @@ function ItemSection({ title, items }: { title: string; items: MockItem[] }) {
 }
 
 export default function HomeScreen() {
+  const [user, setUser] = useState<User | null>(null);
+  const [items, setItems] = useState<ApiItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+
+      async function loadHome() {
+        try {
+          setIsLoading(true);
+          const [storedUser, apiItems] = await Promise.all([
+            getUser(),
+            listItems(),
+          ]);
+          if (isActive) {
+            setUser(storedUser);
+            setItems(apiItems);
+          }
+        } finally {
+          if (isActive) {
+            setIsLoading(false);
+          }
+        }
+      }
+
+      loadHome();
+
+      return () => {
+        isActive = false;
+      };
+    }, []),
+  );
+
+  const recentItems = items.slice(0, 4);
+  const lookingItems = items.filter((item) => item.status === "PERDIDO").slice(0, 4);
+  const profileName = user?.name || profile.name;
+  const profileEmail = user?.email || profile.email;
+
   return (
     <View style={styles.screen}>
       <ScrollView
@@ -151,8 +158,8 @@ export default function HomeScreen() {
               </View>
 
               <View>
-                <Text style={styles.profileName}>{profile.name}</Text>
-                <Text style={styles.profileEmail}>{profile.email}</Text>
+                <Text style={styles.profileName}>{profileName}</Text>
+                <Text style={styles.profileEmail}>{profileEmail}</Text>
               </View>
             </View>
 
@@ -184,54 +191,34 @@ export default function HomeScreen() {
 
             <TouchableOpacity
               style={styles.registerButton}
-              onPress={() =>
-                Alert.alert(
-                  "Visual",
-                  "O fluxo de publicar sera montado depois.",
-                )
-              }
+              onPress={() => router.push({ pathname: "/publish" })}
             >
               <Text style={styles.registerButtonText}>Registrar</Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        <ItemSection title="Itens Recentes" items={recentItems} />
-        <ItemSection title="Itens perdidos" items={lostItems} />
+        {isLoading ? (
+          <View style={styles.loadingCard}>
+            <ActivityIndicator size="small" color="#3552B2" />
+            <Text style={styles.loadingText}>Carregando itens...</Text>
+          </View>
+        ) : items.length === 0 ? (
+          <View style={styles.loadingCard}>
+            <Ionicons name="albums-outline" size={24} color="#3552B2" />
+            <Text style={styles.loadingText}>
+              Nenhuma publicacao ainda. Seja o primeiro a registrar um item.
+            </Text>
+          </View>
+        ) : (
+          <>
+            <ItemSection title="Itens Recentes" items={recentItems} />
+            <ItemSection title="Itens procurando dono" items={lookingItems} />
+          </>
+        )}
       </ScrollView>
 
-      <View style={styles.bottomNav}>
-        {navItems.map((item) => (
-          <TouchableOpacity
-            key={item.label}
-            style={styles.navItem}
-            onPress={() => {
-              if (item.label === "Explorar") {
-                router.push({ pathname: "/explore" });
-                return;
-              }
-
-              if (item.label === "Perfil") {
-                router.push({ pathname: "/profile" });
-                return;
-              }
-
-              Alert.alert("Visual", `A aba ${item.label} sera criada depois.`);
-            }}
-          >
-            <Ionicons
-              name={item.icon}
-              size={18}
-              color={item.active ? "#FFC726" : "#F4F7FF"}
-            />
-            <Text
-              style={[styles.navLabel, item.active && styles.navLabelActive]}
-            >
-              {item.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+      <AppBottomNav activeTab="home" />
     </View>
   );
 }
@@ -246,7 +233,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#F3F4F8",
   },
   content: {
-    paddingBottom: 106,
+    paddingBottom: 124,
   },
   header: {
     backgroundColor: "#3552B2",
@@ -336,6 +323,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingTop: 12,
   },
+  loadingCard: {
+    marginHorizontal: 18,
+    marginTop: 16,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 18,
+    padding: 20,
+    alignItems: "center",
+  },
+  loadingText: {
+    color: "#667085",
+    fontSize: 13,
+    lineHeight: 19,
+    textAlign: "center",
+    marginTop: 8,
+  },
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -380,6 +382,7 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   thumbnailBadge: {
+    backgroundColor: "#FFFFFF",
     borderRadius: 999,
     paddingHorizontal: 8,
     paddingVertical: 3,
@@ -412,33 +415,5 @@ const styles = StyleSheet.create({
     color: "#303030",
     fontSize: 10.5,
     flex: 1,
-  },
-  bottomNav: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "#3552B2",
-    borderTopLeftRadius: 14,
-    borderTopRightRadius: 14,
-    flexDirection: "row",
-    justifyContent: "space-around",
-    paddingTop: 10,
-    paddingBottom: 14,
-  },
-  navItem: {
-    alignItems: "center",
-    justifyContent: "center",
-    minWidth: 60,
-  },
-  navLabel: {
-    marginTop: 3,
-    color: "#F4F7FF",
-    fontSize: 10,
-    fontWeight: "500",
-  },
-  navLabelActive: {
-    color: "#FFC726",
-    fontWeight: "700",
   },
 });

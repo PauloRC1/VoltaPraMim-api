@@ -1,16 +1,23 @@
 import { FastifyReply, FastifyRequest } from "fastify";
 import { prisma } from "../lib/prisma";
 import bcrypt from "bcryptjs";
+import { loginSchema } from "../schemas/auth.schema";
 
 export async function login(request: FastifyRequest, reply: FastifyReply) {
-  const { login, password } = request.body as {
-    login: string;
-    password: string;
-  };
+  const parsed = loginSchema.safeParse(request.body);
+
+  if (!parsed.success) {
+    return reply.status(400).send({
+      message: parsed.error.issues[0]?.message || "Dados de login inválidos.",
+    });
+  }
+
+  const { login, password } = parsed.data;
+  const normalizedLogin = login.toLowerCase();
 
   const user = await prisma.user.findFirst({
     where: {
-      OR: [{ email: login }, { ra: login }],
+      OR: [{ email: normalizedLogin }, { ra: login }],
     },
   });
 
