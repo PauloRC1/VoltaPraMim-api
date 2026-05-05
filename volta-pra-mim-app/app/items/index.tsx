@@ -27,7 +27,7 @@ export default function ItemsScreen() {
         <Text style={styles.eyebrow}>Lista completa</Text>
         <Text style={styles.title}>Itens publicados</Text>
         <Text style={styles.subtitle}>
-          Lista completa com as publicacoes carregadas da API.
+          Lista completa com as publicações carregadas da API.
         </Text>
       </View>
 

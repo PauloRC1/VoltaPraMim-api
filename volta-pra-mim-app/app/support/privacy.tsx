@@ -5,7 +5,7 @@ const dataItems = [
   "Nome e RA institucional",
   "Email e telefone de contato",
   "Itens publicados e historico de atualizacoes",
-  "Informacoes necessarias para retirada ou devolucao",
+  "Informações necessárias para retirada ou devolução",
 ];
 
 export default function PrivacyScreen() {
@@ -16,8 +16,8 @@ export default function PrivacyScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.title}>Seus dados ficam ligados ao uso do app</Text>
         <Text style={styles.paragraph}>
-          Coletamos apenas as informacoes necessarias para identificar usuarios,
-          organizar publicacoes e facilitar a devolucao de itens.
+          Coletamos apenas as informações necessárias para identificar usuários,
+          organizar publicações e facilitar a devolução de itens.
         </Text>
 
         <View style={styles.card}>
@@ -30,8 +30,8 @@ export default function PrivacyScreen() {
         </View>
 
         <Text style={styles.paragraph}>
-          Os dados nao sao compartilhados com terceiros para publicidade. O
-          usuario pode solicitar atualizacao ou exclusao das informacoes pela
+          Os dados não são compartilhados com terceiros para publicidade. O
+          usuário pode solicitar atualização ou exclusão das informações pela
           area de conta.
         </Text>
       </ScrollView>

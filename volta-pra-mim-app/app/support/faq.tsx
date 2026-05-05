@@ -17,12 +17,12 @@ const faqs = [
   {
     question: "Como publico um item?",
     answer:
-      "Entre na aba Publicar, informe se o item foi perdido ou encontrado, adicione local, data, descricao e uma foto quando possivel.",
+      "Entre na aba Publicar, informe se o item foi perdido ou encontrado, adicione local, data, descrição e uma foto quando possível.",
   },
   {
-    question: "Posso editar ou excluir uma publicacao?",
+    question: "Posso editar ou excluir uma publicação?",
     answer:
-      "Sim. Ao entrar com sua conta, voce pode gerenciar os itens publicados por voce.",
+      "Sim. Ao entrar com sua conta, você pode gerenciar os itens publicados por você.",
   },
 ];
 

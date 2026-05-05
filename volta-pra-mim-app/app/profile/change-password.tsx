@@ -56,8 +56,8 @@ export default function ChangePasswordScreen() {
             Entre com seu RA para continuar
           </Text>
           <Text style={styles.restrictedText}>
-            A troca de senha faz parte da area protegida do aluno e nao fica
-            disponivel no modo visitante.
+            A troca de senha faz parte da área protegida do aluno e não fica
+            disponível no modo visitante.
           </Text>
 
           <TouchableOpacity

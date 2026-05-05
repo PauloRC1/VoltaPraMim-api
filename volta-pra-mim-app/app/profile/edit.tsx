@@ -56,8 +56,8 @@ export default function EditProfileScreen() {
             Entre com seu RA para continuar
           </Text>
           <Text style={styles.restrictedText}>
-            A edicao do perfil esta disponivel apenas para alunos autenticados.
-            No modo visitante, voce pode somente visualizar os itens do app.
+            A edição do perfil está disponível apenas para alunos autenticados.
+            No modo visitante, você pode somente visualizar os itens do app.
           </Text>
 
           <TouchableOpacity
@@ -103,7 +103,7 @@ export default function EditProfileScreen() {
 
         <TouchableOpacity
           onPress={() =>
-            Alert.alert("Visual", "A troca de foto sera implementada depois.")
+            Alert.alert("Visual", "A troca de foto será implementada depois.")
           }
         >
           <Text style={styles.changePhotoText}>Trocar foto</Text>

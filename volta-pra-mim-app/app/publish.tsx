@@ -1,9 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { AccessMode, getAccessMode } from "@/services/auth.storage";
 import { api } from "@/services/api";
 import { AppBottomNav } from "@/components/app-bottom-nav";
+import { ItemImage } from "@/components/item-image";
 import {
   ActivityIndicator,
   Alert,
@@ -24,10 +26,10 @@ type ItemCategory =
   | "OUTROS";
 
 const categories: { label: string; value: ItemCategory; icon: keyof typeof Ionicons.glyphMap }[] = [
-  { label: "Eletronicos", value: "ELETRONICOS", icon: "phone-portrait-outline" },
+  { label: "Eletrônicos", value: "ELETRONICOS", icon: "phone-portrait-outline" },
   { label: "Mochila", value: "MOCHILA", icon: "bag-outline" },
   { label: "Documentos", value: "DOCUMENTOS", icon: "card-outline" },
-  { label: "Acessorios", value: "ACESSORIOS", icon: "watch-outline" },
+  { label: "Acessórios", value: "ACESSORIOS", icon: "watch-outline" },
   { label: "Outros", value: "OUTROS", icon: "ellipsis-horizontal-circle-outline" },
 ];
 
@@ -43,6 +45,7 @@ export default function PublishScreen() {
   const [date, setDate] = useState("");
   const [description, setDescription] = useState("");
   const [contactPhone, setContactPhone] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -77,6 +80,7 @@ export default function PublishScreen() {
         status: itemStatus,
         location: location.trim(),
         date: normalizeDate(date),
+        imageUrl: imageUrl || undefined,
       });
 
       Alert.alert("Item publicado", "O item foi cadastrado com sucesso.", [
@@ -88,11 +92,34 @@ export default function PublishScreen() {
     } catch (error: any) {
       const message =
         error.response?.data?.message ||
-        "Nao foi possivel publicar o item. Verifique sua conexao e tente novamente.";
+        "Não foi possível publicar o item. Verifique sua conexão e tente novamente.";
 
       Alert.alert("Erro", message);
     } finally {
       setIsSubmitting(false);
+    }
+  }
+
+  async function handlePickImage() {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (!permission.granted) {
+      Alert.alert(
+        "Permissão necessária",
+        "Autorize o acesso às fotos para adicionar uma imagem ao item.",
+      );
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.8,
+      mediaTypes: ["images"],
+    });
+
+    if (!result.canceled) {
+      setImageUrl(result.assets[0]?.uri || "");
     }
   }
 
@@ -126,7 +153,7 @@ export default function PublishScreen() {
           <Text style={styles.blockedTitle}>Entre com seu RA para continuar</Text>
           <Text style={styles.blockedText}>
             Publicar itens e uma funcionalidade restrita para alunos. No modo
-            visitante, voce pode apenas navegar e consultar os achados e
+            visitante, você pode apenas navegar e consultar os achados e
             perdidos.
           </Text>
 
@@ -304,7 +331,7 @@ export default function PublishScreen() {
           </View>
 
           <View style={styles.fieldGroup}>
-            <Text style={styles.label}>Descricao</Text>
+            <Text style={styles.label}>Descrição</Text>
             <TextInput
               style={styles.textArea}
               placeholder="Descreva o item com o maximo de detalhes."
@@ -328,21 +355,46 @@ export default function PublishScreen() {
             />
           </View>
 
-          <TouchableOpacity
-            style={styles.imageUploadCard}
-            onPress={() =>
-              Alert.alert(
-                "Visual",
-                "Upload de imagem sera implementado depois.",
-              )
-            }
-          >
-            <Ionicons name="image-outline" size={26} color="#3552B2" />
-            <Text style={styles.imageUploadTitle}>Adicionar foto</Text>
-            <Text style={styles.imageUploadDescription}>
-              Envie uma imagem para ajudar na identificacao do item.
-            </Text>
-          </TouchableOpacity>
+          <View style={styles.fieldGroup}>
+            <Text style={styles.label}>Foto do item</Text>
+            <TouchableOpacity
+              style={styles.imageUploadCard}
+              onPress={handlePickImage}
+              activeOpacity={0.86}
+            >
+              {imageUrl ? (
+                <>
+                  <ItemImage
+                    imageUrl={imageUrl}
+                    style={styles.imagePreview}
+                    resizeMode="cover"
+                  />
+                  <View style={styles.imageOverlay}>
+                    <Ionicons name="image-outline" size={20} color="#FFFFFF" />
+                    <Text style={styles.imageOverlayText}>Trocar foto</Text>
+                  </View>
+                </>
+              ) : (
+                <>
+                  <Ionicons name="image-outline" size={26} color="#3552B2" />
+                  <Text style={styles.imageUploadTitle}>Adicionar foto</Text>
+                  <Text style={styles.imageUploadDescription}>
+                    Escolha uma imagem da galeria para ajudar na identificação.
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
+
+            {imageUrl ? (
+              <TouchableOpacity
+                style={styles.removeImageButton}
+                onPress={() => setImageUrl("")}
+              >
+                <Ionicons name="trash-outline" size={16} color="#D92D20" />
+                <Text style={styles.removeImageText}>Remover foto</Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
 
           <Pressable
             style={styles.checkboxRow}
@@ -658,6 +710,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#EFF3FF",
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
     paddingHorizontal: 20,
     paddingVertical: 20,
   },
@@ -673,6 +726,35 @@ const styles = StyleSheet.create({
     fontSize: 12.5,
     lineHeight: 18,
     textAlign: "center",
+  },
+  imagePreview: {
+    ...StyleSheet.absoluteFillObject,
+    width: "100%",
+    height: "100%",
+  },
+  imageOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(10, 18, 34, 0.34)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  imageOverlayText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "800",
+    marginTop: 6,
+  },
+  removeImageButton: {
+    alignSelf: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingVertical: 4,
+  },
+  removeImageText: {
+    color: "#D92D20",
+    fontSize: 13,
+    fontWeight: "700",
   },
   checkboxRow: {
     flexDirection: "row",

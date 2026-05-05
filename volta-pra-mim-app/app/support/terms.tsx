@@ -13,12 +13,12 @@ export default function TermsScreen() {
           recuperar itens perdidos no campus universitario.
         </Text>
         <Text style={styles.paragraph}>
-          As informacoes publicadas precisam ser verdadeiras e respeitosas. E
+          As informações publicadas precisam ser verdadeiras e respeitosas. É
           proibido criar registros falsos, expor dados sensiveis ou usar o app
           para fins que prejudiquem outras pessoas.
         </Text>
         <Text style={styles.paragraph}>
-          A universidade e os administradores podem remover publicacoes
+          A universidade e os administradores podem remover publicações
           inadequadas e bloquear contas em caso de uso indevido.
         </Text>
       </ScrollView>

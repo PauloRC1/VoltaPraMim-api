@@ -43,7 +43,7 @@ const sections: { title: string; items: SettingsItem[] }[] = [
     items: [
       { label: "Idioma", icon: "language-outline" },
       { label: "Tema", icon: "color-palette-outline" },
-      { label: "Notificacoes", icon: "notifications-outline" },
+      { label: "Notificações", icon: "notifications-outline" },
     ],
   },
   {

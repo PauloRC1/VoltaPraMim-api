@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   Alert,
+  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -10,6 +11,7 @@ import {
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import * as Clipboard from "expo-clipboard";
 import { getAccessMode, getUser, User } from "@/services/auth.storage";
 import { getItemStatusStyle } from "@/utils/item-status";
 import {
@@ -111,7 +113,7 @@ export default function ItemDetailsScreen() {
         setItem(apiItem);
         setRelatedItems(apiItems.filter((currentItem) => currentItem.id !== id).slice(0, 4));
       } catch {
-        setErrorMessage("Nao foi possivel carregar este item.");
+        setErrorMessage("Não foi possível carregar este item.");
       } finally {
         setIsLoading(false);
       }
@@ -127,7 +129,7 @@ export default function ItemDetailsScreen() {
           <Ionicons name="hourglass-outline" size={30} color="#3552B2" />
         </View>
         <Text style={styles.emptyTitle}>Carregando item</Text>
-        <Text style={styles.emptyText}>Buscando as informacoes mais recentes.</Text>
+        <Text style={styles.emptyText}>Buscando as informações mais recentes.</Text>
       </View>
     );
   }
@@ -138,9 +140,9 @@ export default function ItemDetailsScreen() {
         <View style={styles.emptyIcon}>
           <Ionicons name="search-outline" size={30} color="#3552B2" />
         </View>
-        <Text style={styles.emptyTitle}>Item nao encontrado</Text>
+        <Text style={styles.emptyTitle}>Item não encontrado</Text>
         <Text style={styles.emptyText}>
-          {errorMessage || "Volte para explorar e escolha um item valido para visualizar."}
+          {errorMessage || "Volte para explorar e escolha um item válido para visualizar."}
         </Text>
         <Pressable
           style={styles.primaryButton}
@@ -157,6 +159,55 @@ export default function ItemDetailsScreen() {
   const isOwner = Boolean(user?.id && (item.user?.id === user.id || item.userId === user.id));
   const canMarkResolved = isOwner && item.status !== "DEVOLVIDO";
 
+  function handleContactPublisher() {
+    const currentItem = item;
+
+    if (!currentItem?.user?.email) {
+      Alert.alert(
+        "Contato indisponível",
+        "Não encontramos um email de contato para quem publicou este item.",
+      );
+      return;
+    }
+
+    const publisherEmail = currentItem.user.email;
+    const subject = encodeURIComponent(`VoltaPraMim: ${currentItem.title}`);
+    const body = encodeURIComponent(
+      `Olá, vi sua publicação sobre "${currentItem.title}" no VoltaPraMim e gostaria de combinar a devolução/recuperação do item.`,
+    );
+    const mailtoUrl = `mailto:${publisherEmail}?subject=${subject}&body=${body}`;
+
+    Alert.alert("Entrar em contato", publisherEmail, [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: "Copiar email",
+        onPress: async () => {
+          await Clipboard.setStringAsync(publisherEmail);
+          Alert.alert(
+            "Email copiado",
+            "O email foi copiado para a área de transferência.",
+          );
+        },
+      },
+      {
+        text: "Enviar email",
+        onPress: async () => {
+          const canOpenEmail = await Linking.canOpenURL(mailtoUrl);
+
+          if (!canOpenEmail) {
+            Alert.alert(
+              "Email indisponível",
+              "Não encontramos um aplicativo de email configurado neste dispositivo.",
+            );
+            return;
+          }
+
+          await Linking.openURL(mailtoUrl);
+        },
+      },
+    ]);
+  }
+
   function handleMarkResolved() {
     if (!item) return;
 
@@ -164,7 +215,7 @@ export default function ItemDetailsScreen() {
 
     Alert.alert(
       "Marcar como resolvido?",
-      "Use essa acao quando o item ja tiver sido devolvido ou recuperado.",
+      "Use essa ação quando o item já tiver sido devolvido ou recuperado.",
       [
         { text: "Cancelar", style: "cancel" },
         {
@@ -179,7 +230,7 @@ export default function ItemDetailsScreen() {
             } catch (error: any) {
               const message =
                 error.response?.data?.message ||
-                "Nao foi possivel marcar este item como resolvido.";
+                "Não foi possível marcar este item como resolvido.";
               Alert.alert("Erro", message);
             } finally {
               setIsResolving(false);
@@ -248,7 +299,7 @@ export default function ItemDetailsScreen() {
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.sectionTitle}>Descricao</Text>
+        <Text style={styles.sectionTitle}>Descrição</Text>
         <Text style={styles.sectionText}>{item.description}</Text>
       </View>
 
@@ -259,7 +310,7 @@ export default function ItemDetailsScreen() {
             <Ionicons name="person" size={20} color="#3552B2" />
           </View>
           <View style={styles.publisherTextWrap}>
-            <Text style={styles.publisherName}>{item.user?.name || "Usuario"}</Text>
+            <Text style={styles.publisherName}>{item.user?.name || "Usuário"}</Text>
             <Text style={styles.publisherHint}>Aluno cadastrado</Text>
           </View>
         </View>
@@ -275,12 +326,12 @@ export default function ItemDetailsScreen() {
         </View>
 
         <Text style={styles.contactTitle}>
-          {isGuest ? "Entre com seu RA para continuar" : "Combine a devolucao"}
+          {isGuest ? "Entre com seu RA para continuar" : "Combine a devolução"}
         </Text>
         <Text style={styles.contactText}>
           {isGuest
             ? "Visitantes podem consultar os detalhes, mas precisam entrar para solicitar contato."
-            : "Converse com quem publicou para combinar a devolucao ou recuperacao do item."}
+            : "Converse com quem publicou para combinar a devolução ou recuperação do item."}
         </Text>
 
         <TouchableOpacity
@@ -292,10 +343,7 @@ export default function ItemDetailsScreen() {
               return;
             }
 
-            Alert.alert(
-              "Contato",
-              "Esse fluxo ainda sera conectado ao backend depois.",
-            );
+            handleContactPublisher();
           }}
         >
           <Text style={styles.contactButtonText}>

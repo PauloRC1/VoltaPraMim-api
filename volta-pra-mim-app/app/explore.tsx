@@ -156,7 +156,7 @@ export default function ExploreScreen() {
                 Entre com seu RA para continuar
               </Text>
               <Text style={styles.guestBannerText}>
-                Como visitante, voce pode explorar os itens normalmente, mas
+                Como visitante, você pode explorar os itens normalmente, mas
                 publicar e acessar recursos restritos exigem login institucional.
               </Text>
             </View>

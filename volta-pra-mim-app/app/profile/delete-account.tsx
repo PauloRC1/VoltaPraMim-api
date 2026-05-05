@@ -102,8 +102,8 @@ export default function DeleteAccountScreen() {
 
         <Text style={styles.warningTitle}>Exclua sua conta</Text>
         <Text style={styles.warningText}>
-          Esta acao e permanente e nao pode ser desfeita. Todos os seus dados
-          serao apagados.
+          Esta ação é permanente e não pode ser desfeita. Todos os seus dados
+          serão apagados.
         </Text>
       </View>
 

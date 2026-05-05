@@ -3,10 +3,10 @@ import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { ScreenHeader } from "@/components/screen-header";
 
 const features = [
-  "Publicacao de itens perdidos e encontrados",
+  "Publicação de itens perdidos e encontrados",
   "Busca por categoria, status e local",
   "Contato mais seguro entre alunos",
-  "Organizacao por data e situacao do item",
+  "Organização por data e situação do item",
 ];
 
 export default function AboutScreen() {

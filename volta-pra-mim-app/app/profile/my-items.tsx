@@ -49,7 +49,7 @@ export default function MyItemsScreen() {
             }
           } catch {
             if (isActive) {
-              setErrorMessage("Nao foi possivel carregar seus itens agora.");
+              setErrorMessage("Não foi possível carregar seus itens agora.");
             }
           } finally {
             if (isActive) {
@@ -77,7 +77,7 @@ export default function MyItemsScreen() {
   function handleResolve(itemId: string) {
     Alert.alert(
       "Marcar como resolvido?",
-      "Use essa acao quando o item ja tiver sido devolvido ou encontrado.",
+      "Use essa ação quando o item já tiver sido devolvido ou encontrado.",
       [
         { text: "Cancelar", style: "cancel" },
         {
@@ -95,7 +95,7 @@ export default function MyItemsScreen() {
             } catch (error: any) {
               const message =
                 error.response?.data?.message ||
-                "Nao foi possivel marcar este item como resolvido.";
+                "Não foi possível marcar este item como resolvido.";
               Alert.alert("Erro", message);
             }
           },
@@ -106,8 +106,8 @@ export default function MyItemsScreen() {
 
   function handleDelete(itemId: string) {
     Alert.alert(
-      "Excluir publicacao?",
-      "Essa acao remove o item da lista e nao pode ser desfeita.",
+      "Excluir publicação?",
+      "Essa ação remove o item da lista e não pode ser desfeita.",
       [
         { text: "Cancelar", style: "cancel" },
         {
@@ -122,7 +122,7 @@ export default function MyItemsScreen() {
             } catch (error: any) {
               const message =
                 error.response?.data?.message ||
-                "Nao foi possivel excluir este item.";
+                "Não foi possível excluir este item.";
               Alert.alert("Erro", message);
             }
           },
@@ -155,7 +155,7 @@ export default function MyItemsScreen() {
           </View>
           <Text style={styles.restrictedTitle}>Entre para gerenciar itens</Text>
           <Text style={styles.restrictedText}>
-            Visitantes podem explorar publicacoes, mas apenas alunos autenticados
+            Visitantes podem explorar publicações, mas apenas alunos autenticados
             conseguem acompanhar e resolver seus itens.
           </Text>
           <TouchableOpacity style={styles.primaryButton} onPress={() => router.replace("/login")}>
@@ -181,10 +181,10 @@ export default function MyItemsScreen() {
         </View>
 
         <View style={styles.summaryCard}>
-          <Text style={styles.summaryTitle}>Acompanhe suas publicacoes</Text>
+          <Text style={styles.summaryTitle}>Acompanhe suas publicações</Text>
           <Text style={styles.summaryText}>
             Quando um item for devolvido ou recuperado, marque como resolvido
-            para encerrar a publicacao.
+            para encerrar a publicação.
           </Text>
 
           <View style={styles.statsRow}>
@@ -200,7 +200,7 @@ export default function MyItemsScreen() {
         </View>
 
         <View style={styles.listHeader}>
-          <Text style={styles.sectionTitle}>Publicados por voce</Text>
+          <Text style={styles.sectionTitle}>Publicados por você</Text>
           <TouchableOpacity onPress={() => router.push("/publish")}>
             <Text style={styles.publishLink}>Novo item</Text>
           </TouchableOpacity>
@@ -222,7 +222,7 @@ export default function MyItemsScreen() {
             <Ionicons name="albums-outline" size={28} color="#3552B2" />
             <Text style={styles.emptyTitle}>Nenhum item publicado</Text>
             <Text style={styles.emptyText}>
-              Quando voce publicar um item, ele aparece aqui para acompanhamento.
+              Quando você publicar um item, ele aparece aqui para acompanhamento.
             </Text>
           </View>
         ) : (

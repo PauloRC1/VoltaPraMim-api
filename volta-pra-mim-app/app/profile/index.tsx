@@ -22,7 +22,7 @@ const profile = {
 const actions = [
   {
     label: "Meus itens",
-    description: "Acompanhe publicacoes e marque itens resolvidos.",
+    description: "Acompanhe publicações e marque itens resolvidos.",
     icon: "albums-outline" as const,
     route: "/profile/my-items" as const,
   },
@@ -40,7 +40,7 @@ const actions = [
   },
   {
     label: "Configuracoes",
-    description: "Preferencias, ajuda e informacoes do aplicativo.",
+    description: "Preferências, ajuda e informações do aplicativo.",
     icon: "settings-outline" as const,
     route: "/settings" as const,
   },

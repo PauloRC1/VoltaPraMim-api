@@ -13,13 +13,18 @@ import {
   View,
 } from "react-native";
 import { getItemStatusStyle } from "@/utils/item-status";
-import { getUser, User } from "@/services/auth.storage";
+import {
+  AccessMode,
+  getAccessMode,
+  getUser,
+  User,
+} from "@/services/auth.storage";
 import { ApiItem, formatItemDate, listItems } from "@/services/items";
 import { ItemImage } from "@/components/item-image";
 
-const profile = {
-  name: "Marcinho Branco",
-  email: "marchinho.nbrc@gmail.com",
+const guestProfile = {
+  name: "Visitante",
+  email: "Entre com seu RA para publicar itens",
 };
 
 function getCardTitle(title: string) {
@@ -104,6 +109,7 @@ function ItemSection({ title, items }: { title: string; items: ApiItem[] }) {
 }
 
 export default function HomeScreen() {
+  const [accessMode, setAccessMode] = useState<AccessMode | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [items, setItems] = useState<ApiItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -115,12 +121,14 @@ export default function HomeScreen() {
       async function loadHome() {
         try {
           setIsLoading(true);
-          const [storedUser, apiItems] = await Promise.all([
+          const [storedAccessMode, storedUser, apiItems] = await Promise.all([
+            getAccessMode(),
             getUser(),
             listItems(),
           ]);
           if (isActive) {
-            setUser(storedUser);
+            setAccessMode(storedAccessMode);
+            setUser(storedAccessMode === "authenticated" ? storedUser : null);
             setItems(apiItems);
           }
         } finally {
@@ -140,8 +148,11 @@ export default function HomeScreen() {
 
   const recentItems = items.slice(0, 4);
   const lookingItems = items.filter((item) => item.status === "PERDIDO").slice(0, 4);
-  const profileName = user?.name || profile.name;
-  const profileEmail = user?.email || profile.email;
+  const isGuest = accessMode === "guest";
+  const profileName = isGuest ? guestProfile.name : user?.name || "Olá";
+  const profileEmail = isGuest
+    ? guestProfile.email
+    : user?.email || "Bem-vindo ao VoltaPraMim";
 
   return (
     <View style={styles.screen}>
@@ -168,7 +179,7 @@ export default function HomeScreen() {
               onPress={() =>
                 Alert.alert(
                   "Visual",
-                  "Notificacoes ainda nao foram implementadas.",
+                  "Notificações ainda não foram implementadas.",
                 )
               }
             >
@@ -207,7 +218,7 @@ export default function HomeScreen() {
           <View style={styles.loadingCard}>
             <Ionicons name="albums-outline" size={24} color="#3552B2" />
             <Text style={styles.loadingText}>
-              Nenhuma publicacao ainda. Seja o primeiro a registrar um item.
+              Nenhuma publicação ainda. Seja o primeiro a registrar um item.
             </Text>
           </View>
         ) : (

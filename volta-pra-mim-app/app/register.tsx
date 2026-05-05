@@ -78,8 +78,8 @@ export default function RegisterScreen() {
 
     if (!account) {
       Alert.alert(
-        "Conta nao encontrada",
-        "Nao localizamos um cadastro institucional com esse RA. Verifique o numero e tente novamente.",
+        "Conta não encontrada",
+        "Não localizamos um cadastro institucional com esse RA. Verifique o número e tente novamente.",
       );
       return;
     }
@@ -103,12 +103,12 @@ export default function RegisterScreen() {
     }
 
     if (normalizedPassword !== normalizedConfirmPassword) {
-      Alert.alert("Erro", "As senhas nao coincidem.");
+      Alert.alert("Erro", "As senhas não coincidem.");
       return;
     }
 
     if (!acceptedTerms) {
-      Alert.alert("Erro", "Voce precisa aceitar os termos de uso.");
+      Alert.alert("Erro", "Você precisa aceitar os termos de uso.");
       return;
     }
 
@@ -130,7 +130,7 @@ export default function RegisterScreen() {
 
       Alert.alert(
         "Conta ativada",
-        "Sua conta institucional foi encontrada e ativada com sucesso. Agora voce ja pode fazer login.",
+        "Sua conta institucional foi encontrada e ativada com sucesso. Agora você já pode fazer login.",
         [
           {
             text: "Entrar",
@@ -141,7 +141,7 @@ export default function RegisterScreen() {
     } catch (error: any) {
       const message =
         error.response?.data?.message ||
-        "Nao foi possivel ativar sua conta. Verifique se o backend esta rodando e tente novamente.";
+        "Não foi possível ativar sua conta. Verifique se o backend está rodando e tente novamente.";
 
       Alert.alert("Erro ao ativar conta", message);
     } finally {
@@ -201,8 +201,8 @@ export default function RegisterScreen() {
             <View style={styles.infoCard}>
               <Text style={styles.infoTitle}>Informe seu RA</Text>
               <Text style={styles.infoText}>
-                Se sua conta ja estiver cadastrada pela faculdade, vamos
-                localizar seus dados e liberar a criacao da senha.
+                Se sua conta já estiver cadastrada pela faculdade, vamos
+                localizar seus dados e liberar a criação da senha.
               </Text>
             </View>
 

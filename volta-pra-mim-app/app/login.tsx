@@ -55,8 +55,8 @@ export default function LoginScreen() {
         Alert.alert("Erro", error.response.data.message);
       } else {
         Alert.alert(
-          "Erro de conexao",
-          "Nao foi possivel conectar ao servidor. Verifique se o backend esta rodando.",
+          "Erro de conexão",
+          "Não foi possível conectar ao servidor. Verifique se o backend está rodando.",
         );
       }
     } finally {
@@ -163,7 +163,7 @@ export default function LoginScreen() {
               hitSlop={10}
               onPress={() => router.push("/register")}
             >
-              <Text style={styles.signupLink}>Ativar conta</Text>
+              <Text style={styles.signupLink}>Criar conta</Text>
             </TouchableOpacity>
           </View>
         </View>
