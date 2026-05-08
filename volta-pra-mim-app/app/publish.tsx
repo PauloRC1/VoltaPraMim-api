@@ -6,6 +6,7 @@ import { AccessMode, getAccessMode } from "@/services/auth.storage";
 import { api } from "@/services/api";
 import { AppBottomNav } from "@/components/app-bottom-nav";
 import { ItemImage } from "@/components/item-image";
+import { uploadImageIfNeeded } from "@/services/uploads";
 import {
   ActivityIndicator,
   Alert,
@@ -72,6 +73,7 @@ export default function PublishScreen() {
 
     try {
       setIsSubmitting(true);
+      const uploadedImageUrl = imageUrl ? await uploadImageIfNeeded(imageUrl) : undefined;
 
       await api.post("/items", {
         title: title.trim(),
@@ -80,7 +82,9 @@ export default function PublishScreen() {
         status: itemStatus,
         location: location.trim(),
         date: normalizeDate(date),
-        imageUrl: imageUrl || undefined,
+        imageUrl: uploadedImageUrl,
+        contactPhone: hidePhone ? undefined : contactPhone.trim() || undefined,
+        hidePhone,
       });
 
       Alert.alert("Item publicado", "O item foi cadastrado com sucesso.", [
@@ -115,11 +119,14 @@ export default function PublishScreen() {
       allowsEditing: true,
       aspect: [4, 3],
       quality: 0.8,
+      base64: true,
       mediaTypes: ["images"],
     });
 
     if (!result.canceled) {
-      setImageUrl(result.assets[0]?.uri || "");
+      const asset = result.assets[0];
+      const mediaType = asset?.mimeType || "image/jpeg";
+      setImageUrl(asset?.base64 ? `data:${mediaType};base64,${asset.base64}` : asset?.uri || "");
     }
   }
 

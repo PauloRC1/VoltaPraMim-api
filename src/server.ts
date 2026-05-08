@@ -5,6 +5,8 @@ import swagger from "@fastify/swagger";
 import swaggerUI from "@fastify/swagger-ui";
 import { authRoutes } from "./routes/auth";
 import { itemRoutes } from "./routes/item";
+import { adminRoutes } from "./routes/admin";
+import { uploadRoutes } from "./routes/upload";
 
 const app = Fastify();
 const jwtSecret = process.env.JWT_SECRET;
@@ -46,6 +48,8 @@ app.register(swaggerUI, {
 
 app.register(authRoutes);
 app.register(itemRoutes);
+app.register(adminRoutes);
+app.register(uploadRoutes);
 
 const port = Number(process.env.PORT ?? 3333);
 

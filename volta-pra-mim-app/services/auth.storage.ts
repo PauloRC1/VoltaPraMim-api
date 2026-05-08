@@ -7,6 +7,7 @@ export type User = {
   email: string;
   ra?: string;
   phone?: string | null;
+  role?: "USER" | "ADMIN";
 };
 
 export type AccessMode = "authenticated" | "guest";
@@ -43,6 +44,10 @@ export async function getUser() {
   if (!user) return null;
 
   return JSON.parse(user);
+}
+
+export async function updateStoredUser(user: User) {
+  await AsyncStorage.setItem(STORAGE_KEY.user, JSON.stringify(user));
 }
 
 export async function getAccessMode(): Promise<AccessMode | null> {

@@ -21,6 +21,11 @@ enum Category {
   OUTROS
 }
 
+enum UserRole {
+  USER
+  ADMIN
+}
+
 model User {
   id        String   @id @default(uuid())
   name      String
@@ -28,10 +33,23 @@ model User {
   ra        String   @unique
   password  String
   phone     String?
+  role      UserRole @default(USER)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   items     Item[]
+  passwordResetTokens PasswordResetToken[]
+}
+
+model InstitutionalAccount {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  ra        String   @unique
+  phone     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Item {
@@ -43,9 +61,24 @@ model Item {
   location    String
   date        DateTime
   imageUrl    String?
+  contactPhone String?
+  hidePhone   Boolean    @default(false)
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 
   userId      String
   user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  code      String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, code])
 }

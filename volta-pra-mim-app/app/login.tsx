@@ -18,7 +18,7 @@ import {
   Pressable,
   KeyboardAvoidingView,
 } from "react-native";
-import { router } from "expo-router";
+import { type Href, router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
 export default function LoginScreen() {
@@ -151,8 +151,18 @@ export default function LoginScreen() {
             )}
           </TouchableOpacity>
 
-          <TouchableOpacity hitSlop={10}>
+          <TouchableOpacity
+            hitSlop={10}
+            onPress={() => router.push("/forgot-password" as Href)}
+          >
             <Text style={styles.forgotPassword}>Esqueceu a senha?</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            hitSlop={10}
+            onPress={() => router.push("/admin-login" as Href)}
+          >
+            <Text style={styles.adminLink}>Acesso administrativo</Text>
           </TouchableOpacity>
 
           <Text style={styles.orText}>ou</Text>
@@ -267,6 +277,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     textAlign: "center",
     marginTop: 4,
+  },
+  adminLink: {
+    color: "#313743",
+    fontSize: 12.5,
+    textAlign: "center",
+    fontWeight: "700",
   },
   orText: {
     color: "#666B73",

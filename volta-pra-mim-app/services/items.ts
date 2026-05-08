@@ -12,6 +12,7 @@ export type ApiItemUser = {
   id: string;
   name: string;
   email: string;
+  phone?: string | null;
 };
 
 export type ApiItem = {
@@ -23,6 +24,8 @@ export type ApiItem = {
   location: string;
   date: string;
   imageUrl?: string | null;
+  contactPhone?: string | null;
+  hidePhone?: boolean;
   createdAt?: string;
   updatedAt?: string;
   userId?: string;
@@ -88,6 +91,8 @@ export type UpdateItemPayload = {
   location?: string;
   date?: string;
   imageUrl?: string | null;
+  contactPhone?: string | null;
+  hidePhone?: boolean;
 };
 
 export async function updateItem(id: string, payload: UpdateItemPayload) {

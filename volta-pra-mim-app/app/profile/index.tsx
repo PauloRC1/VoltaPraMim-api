@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { AccessMode, getAccessMode, getUser, User } from "@/services/auth.storage";
+import { isAdminUser } from "@/services/admin";
 import { AppBottomNav } from "@/components/app-bottom-nav";
 import {
   ActivityIndicator,
@@ -19,7 +20,21 @@ const profile = {
   phone: "(11) 99876-5432",
 };
 
-const actions = [
+type ProfileAction = {
+  label: string;
+  description: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  route:
+    | "/admin"
+    | "/profile/my-items"
+    | "/profile/edit"
+    | "/profile/change-password"
+    | "/settings"
+    | "/profile/delete-account";
+  danger?: boolean;
+};
+
+const actions: ProfileAction[] = [
   {
     label: "Meus itens",
     description: "Acompanhe publicações e marque itens resolvidos.",
@@ -137,6 +152,17 @@ export default function ProfileScreen() {
   const profileRa = user?.ra || profile.ra;
   const profileEmail = user?.email || profile.email;
   const profilePhone = user?.phone || profile.phone;
+  const accountActions: ProfileAction[] = isAdminUser(user)
+    ? [
+        {
+          label: "Painel ADM",
+          description: "Acompanhe usuários, publicações e itens resolvidos.",
+          icon: "speedometer-outline" as const,
+          route: "/admin" as const,
+        },
+        ...actions,
+      ]
+    : actions;
 
   return (
     <View style={styles.screen}>
@@ -171,7 +197,7 @@ export default function ProfileScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Conta</Text>
 
-          {actions.map((action) => (
+          {accountActions.map((action) => (
             <TouchableOpacity
               key={action.label}
               style={styles.actionCard}

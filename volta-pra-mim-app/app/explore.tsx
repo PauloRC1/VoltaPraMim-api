@@ -24,7 +24,7 @@ import {
 } from "react-native";
 
 const categories = ["Todos", "Procurando", "Encontrados", "Recentes"];
-const categoryFilters: Array<ApiItemCategory | "TODOS"> = [
+const categoryFilters: (ApiItemCategory | "TODOS")[] = [
   "TODOS",
   "ELETRONICOS",
   "MOCHILA",

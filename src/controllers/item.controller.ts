@@ -32,6 +32,8 @@ export async function createItem(request: FastifyRequest, reply: FastifyReply) {
       location: body.location,
       date: new Date(body.date),
       imageUrl: body.imageUrl ?? null,
+      contactPhone: body.contactPhone?.trim() || null,
+      hidePhone: body.hidePhone ?? false,
       userId,
     },
     include: {
@@ -211,6 +213,10 @@ export async function editItem(request: FastifyRequest, reply: FastifyReply) {
       ...(body.location !== undefined ? { location: body.location } : {}),
       ...(body.date !== undefined ? { date: new Date(body.date) } : {}),
       ...(body.imageUrl !== undefined ? { imageUrl: body.imageUrl } : {}),
+      ...(body.contactPhone !== undefined
+        ? { contactPhone: body.contactPhone?.trim() || null }
+        : {}),
+      ...(body.hidePhone !== undefined ? { hidePhone: body.hidePhone } : {}),
     },
   });
 

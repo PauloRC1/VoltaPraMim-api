@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { AccessMode, getAccessMode } from "@/services/auth.storage";
+import { deleteAccount } from "@/services/auth";
 import {
   ActivityIndicator,
   Alert,
@@ -14,10 +15,41 @@ import {
 
 export default function DeleteAccountScreen() {
   const [accessMode, setAccessMode] = useState<AccessMode | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     getAccessMode().then(setAccessMode);
   }, []);
+
+  function handleDeleteAccount() {
+    Alert.alert(
+      "Excluir conta?",
+      "Essa ação é permanente e também remove suas publicações.",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Excluir",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              setIsDeleting(true);
+              await deleteAccount();
+              Alert.alert("Conta excluída", "Sua conta foi removida.", [
+                { text: "OK", onPress: () => router.replace("/login") },
+              ]);
+            } catch (error: any) {
+              const message =
+                error.response?.data?.message ||
+                "Não foi possível excluir sua conta.";
+              Alert.alert("Erro", message);
+            } finally {
+              setIsDeleting(false);
+            }
+          },
+        },
+      ],
+    );
+  }
 
   if (accessMode === null) {
     return (
@@ -108,12 +140,15 @@ export default function DeleteAccountScreen() {
       </View>
 
       <TouchableOpacity
-        style={styles.deleteButton}
-        onPress={() =>
-          Alert.alert("Visual", "Exclusao de conta apenas simulada no mock.")
-        }
+        style={[styles.deleteButton, isDeleting && styles.buttonDisabled]}
+        onPress={handleDeleteAccount}
+        disabled={isDeleting}
       >
-        <Text style={styles.deleteButtonText}>Excluir permanentemente</Text>
+        {isDeleting ? (
+          <ActivityIndicator color="#FFFFFF" />
+        ) : (
+          <Text style={styles.deleteButtonText}>Excluir permanentemente</Text>
+        )}
       </TouchableOpacity>
     </ScrollView>
   );
@@ -220,6 +255,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#FF3B3B",
     alignItems: "center",
     justifyContent: "center",
+  },
+  buttonDisabled: {
+    opacity: 0.7,
   },
   deleteButtonText: {
     color: "#FFFFFF",

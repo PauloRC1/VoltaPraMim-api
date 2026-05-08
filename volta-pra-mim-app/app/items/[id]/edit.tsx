@@ -14,6 +14,7 @@ import * as ImagePicker from "expo-image-picker";
 import { router, useLocalSearchParams } from "expo-router";
 import { ApiItemCategory, getItemById, updateItem } from "@/services/items";
 import { ItemImage } from "@/components/item-image";
+import { uploadImageIfNeeded } from "@/services/uploads";
 
 const categories: {
   label: string;
@@ -34,6 +35,8 @@ export default function EditItemScreen() {
   const [location, setLocation] = useState("");
   const [date, setDate] = useState("");
   const [description, setDescription] = useState("");
+  const [contactPhone, setContactPhone] = useState("");
+  const [hidePhone, setHidePhone] = useState(false);
   const [imageUrl, setImageUrl] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -50,6 +53,8 @@ export default function EditItemScreen() {
         setLocation(item.location);
         setDate(formatDateForInput(item.date));
         setDescription(item.description);
+        setContactPhone(item.contactPhone || "");
+        setHidePhone(Boolean(item.hidePhone));
         setImageUrl(item.imageUrl || "");
       } catch {
         Alert.alert("Erro", "Não foi possível carregar este item.", [
@@ -73,6 +78,7 @@ export default function EditItemScreen() {
 
     try {
       setIsSaving(true);
+      const uploadedImageUrl = imageUrl ? await uploadImageIfNeeded(imageUrl.trim()) : null;
 
       await updateItem(id, {
         title: title.trim(),
@@ -80,7 +86,9 @@ export default function EditItemScreen() {
         location: location.trim(),
         date: normalizeDate(date),
         description: description.trim(),
-        imageUrl: imageUrl.trim() || null,
+        imageUrl: uploadedImageUrl,
+        contactPhone: hidePhone ? null : contactPhone.trim() || null,
+        hidePhone,
       });
 
       Alert.alert("Item atualizado", "As alterações foram salvas.", [
@@ -118,11 +126,14 @@ export default function EditItemScreen() {
       allowsEditing: true,
       aspect: [4, 3],
       quality: 0.8,
+      base64: true,
       mediaTypes: ["images"],
     });
 
     if (!result.canceled) {
-      setImageUrl(result.assets[0]?.uri || "");
+      const asset = result.assets[0];
+      const mediaType = asset?.mimeType || "image/jpeg";
+      setImageUrl(asset?.base64 ? `data:${mediaType};base64,${asset.base64}` : asset?.uri || "");
     }
   }
 
@@ -255,6 +266,31 @@ export default function EditItemScreen() {
             textAlignVertical="top"
           />
         </View>
+
+        <View style={styles.fieldGroup}>
+          <Text style={styles.label}>Telefone para contato</Text>
+          <TextInput
+            style={styles.input}
+            value={contactPhone}
+            onChangeText={setContactPhone}
+            placeholder="Ex: (11) 99876-5432"
+            placeholderTextColor="#8A8F98"
+            keyboardType="phone-pad"
+          />
+        </View>
+
+        <TouchableOpacity
+          style={styles.checkboxRow}
+          onPress={() => setHidePhone((current) => !current)}
+          activeOpacity={0.85}
+        >
+          <View style={[styles.checkbox, hidePhone && styles.checkboxChecked]}>
+            {hidePhone ? (
+              <Ionicons name="checkmark" size={12} color="#FFFFFF" />
+            ) : null}
+          </View>
+          <Text style={styles.checkboxText}>Ocultar meu telefone</Text>
+        </TouchableOpacity>
 
         <View style={styles.fieldGroup}>
           <Text style={styles.label}>Foto do item</Text>
@@ -476,6 +512,30 @@ const styles = StyleSheet.create({
     color: "#D92D20",
     fontSize: 13,
     fontWeight: "700",
+  },
+  checkboxRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 2,
+  },
+  checkbox: {
+    width: 16,
+    height: 16,
+    borderRadius: 4,
+    borderWidth: 1.3,
+    borderColor: "#7A8394",
+    backgroundColor: "#FFFFFF",
+    marginRight: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  checkboxChecked: {
+    backgroundColor: "#3552B2",
+    borderColor: "#3552B2",
+  },
+  checkboxText: {
+    color: "#3E4757",
+    fontSize: 13,
   },
   saveButton: {
     marginTop: 28,

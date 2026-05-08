@@ -4,7 +4,6 @@ import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -131,6 +130,16 @@ export default function HomeScreen() {
             setUser(storedAccessMode === "authenticated" ? storedUser : null);
             setItems(apiItems);
           }
+        } catch {
+          if (isActive) {
+            const [storedAccessMode, storedUser] = await Promise.all([
+              getAccessMode(),
+              getUser(),
+            ]);
+            setAccessMode(storedAccessMode);
+            setUser(storedAccessMode === "authenticated" ? storedUser : null);
+            setItems([]);
+          }
         } finally {
           if (isActive) {
             setIsLoading(false);
@@ -176,15 +185,10 @@ export default function HomeScreen() {
 
             <TouchableOpacity
               style={styles.notificationButton}
-              onPress={() =>
-                Alert.alert(
-                  "Visual",
-                  "Notificações ainda não foram implementadas.",
-                )
-              }
+              onPress={() => router.push("/settings")}
             >
               <Ionicons
-                name="notifications-outline"
+                name="settings-outline"
                 size={20}
                 color="#FFFFFF"
               />

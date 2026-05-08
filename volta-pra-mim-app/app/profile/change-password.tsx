@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { AccessMode, getAccessMode } from "@/services/auth.storage";
+import { changePassword } from "@/services/auth";
 import {
   ActivityIndicator,
   Alert,
@@ -15,10 +16,45 @@ import {
 
 export default function ChangePasswordScreen() {
   const [accessMode, setAccessMode] = useState<AccessMode | null>(null);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     getAccessMode().then(setAccessMode);
   }, []);
+
+  async function handleChangePassword() {
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      Alert.alert("Erro", "Preencha todos os campos.");
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      Alert.alert("Erro", "A nova senha deve ter no mínimo 6 caracteres.");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      Alert.alert("Erro", "As senhas não coincidem.");
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      await changePassword({ currentPassword, newPassword });
+      Alert.alert("Senha alterada", "Sua senha foi atualizada.", [
+        { text: "OK", onPress: () => router.replace("/profile") },
+      ]);
+    } catch (error: any) {
+      const message =
+        error.response?.data?.message || "Não foi possível alterar a senha.";
+      Alert.alert("Erro", message);
+    } finally {
+      setIsSaving(false);
+    }
+  }
 
   if (accessMode === null) {
     return (
@@ -112,6 +148,8 @@ export default function ChangePasswordScreen() {
             placeholder="Digite sua senha atual"
             placeholderTextColor="#8A8F98"
             secureTextEntry
+            value={currentPassword}
+            onChangeText={setCurrentPassword}
           />
         </View>
 
@@ -122,6 +160,8 @@ export default function ChangePasswordScreen() {
             placeholder="Digite sua nova senha"
             placeholderTextColor="#8A8F98"
             secureTextEntry
+            value={newPassword}
+            onChangeText={setNewPassword}
           />
         </View>
 
@@ -132,15 +172,22 @@ export default function ChangePasswordScreen() {
             placeholder="Repita a nova senha"
             placeholderTextColor="#8A8F98"
             secureTextEntry
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
           />
         </View>
       </View>
 
       <TouchableOpacity
-        style={styles.saveButton}
-        onPress={() => Alert.alert("Visual", "Senha alterada apenas no mock.")}
+        style={[styles.saveButton, isSaving && styles.buttonDisabled]}
+        onPress={handleChangePassword}
+        disabled={isSaving}
       >
-        <Text style={styles.saveButtonText}>Salvar</Text>
+        {isSaving ? (
+          <ActivityIndicator color="#FFFFFF" />
+        ) : (
+          <Text style={styles.saveButtonText}>Salvar</Text>
+        )}
       </TouchableOpacity>
     </ScrollView>
   );
@@ -254,6 +301,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#3552B2",
     alignItems: "center",
     justifyContent: "center",
+  },
+  buttonDisabled: {
+    opacity: 0.7,
   },
   saveButtonText: {
     color: "#FFFFFF",

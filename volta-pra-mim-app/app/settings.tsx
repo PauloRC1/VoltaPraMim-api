@@ -39,14 +39,6 @@ const sections: { title: string; items: SettingsItem[] }[] = [
     ],
   },
   {
-    title: "Aparencia",
-    items: [
-      { label: "Idioma", icon: "language-outline" },
-      { label: "Tema", icon: "color-palette-outline" },
-      { label: "Notificações", icon: "notifications-outline" },
-    ],
-  },
-  {
     title: "Ajuda",
     items: [
       { label: "Perguntas frequentes", icon: "help-buoy-outline", route: "/support/faq" },

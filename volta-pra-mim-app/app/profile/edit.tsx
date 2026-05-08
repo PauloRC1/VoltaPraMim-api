@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
-import { AccessMode, getAccessMode } from "@/services/auth.storage";
+import { AccessMode, getAccessMode, getUser } from "@/services/auth.storage";
+import { updateProfile } from "@/services/auth";
 import {
   ActivityIndicator,
   Alert,
@@ -15,10 +16,56 @@ import {
 
 export default function EditProfileScreen() {
   const [accessMode, setAccessMode] = useState<AccessMode | null>(null);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [ra, setRa] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    getAccessMode().then(setAccessMode);
+    async function loadProfile() {
+      const [storedAccessMode, storedUser] = await Promise.all([
+        getAccessMode(),
+        getUser(),
+      ]);
+
+      setAccessMode(storedAccessMode);
+
+      if (storedUser) {
+        setName(storedUser.name);
+        setEmail(storedUser.email);
+        setPhone(storedUser.phone || "");
+        setRa(storedUser.ra || "");
+      }
+    }
+
+    loadProfile();
   }, []);
+
+  async function handleSaveProfile() {
+    if (!name.trim() || !email.trim()) {
+      Alert.alert("Erro", "Preencha nome e email.");
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      await updateProfile({
+        name: name.trim(),
+        email: email.trim(),
+        phone: phone.trim() || null,
+      });
+      Alert.alert("Perfil atualizado", "Seus dados foram salvos.", [
+        { text: "OK", onPress: () => router.replace("/profile") },
+      ]);
+    } catch (error: any) {
+      const message =
+        error.response?.data?.message || "Não foi possível salvar o perfil.";
+      Alert.alert("Erro", message);
+    } finally {
+      setIsSaving(false);
+    }
+  }
 
   if (accessMode === null) {
     return (
@@ -101,13 +148,6 @@ export default function EditProfileScreen() {
           <Ionicons name="person" size={40} color="#3552B2" />
         </View>
 
-        <TouchableOpacity
-          onPress={() =>
-            Alert.alert("Visual", "A troca de foto será implementada depois.")
-          }
-        >
-          <Text style={styles.changePhotoText}>Trocar foto</Text>
-        </TouchableOpacity>
       </View>
 
       <View style={styles.form}>
@@ -115,7 +155,8 @@ export default function EditProfileScreen() {
           <Text style={styles.label}>Nome completo</Text>
           <TextInput
             style={styles.input}
-            defaultValue="Marcinho Branco"
+            value={name}
+            onChangeText={setName}
             placeholderTextColor="#8A8F98"
           />
         </View>
@@ -124,7 +165,8 @@ export default function EditProfileScreen() {
           <Text style={styles.label}>Email</Text>
           <TextInput
             style={styles.input}
-            defaultValue="marcinho.nbrc@gmail.com"
+            value={email}
+            onChangeText={setEmail}
             placeholderTextColor="#8A8F98"
             autoCapitalize="none"
           />
@@ -134,7 +176,8 @@ export default function EditProfileScreen() {
           <Text style={styles.label}>Numero</Text>
           <TextInput
             style={styles.input}
-            defaultValue="(11) 99876-5432"
+            value={phone}
+            onChangeText={setPhone}
             placeholderTextColor="#8A8F98"
             keyboardType="phone-pad"
           />
@@ -144,17 +187,22 @@ export default function EditProfileScreen() {
           <Text style={styles.label}>RA</Text>
           <TextInput
             style={[styles.input, styles.inputDisabled]}
-            defaultValue="24011434"
+            value={ra}
             editable={false}
           />
         </View>
       </View>
 
       <TouchableOpacity
-        style={styles.saveButton}
-        onPress={() => Alert.alert("Visual", "Perfil salvo apenas no mock.")}
+        style={[styles.saveButton, isSaving && styles.buttonDisabled]}
+        onPress={handleSaveProfile}
+        disabled={isSaving}
       >
-        <Text style={styles.saveButtonText}>Salvar</Text>
+        {isSaving ? (
+          <ActivityIndicator color="#FFFFFF" />
+        ) : (
+          <Text style={styles.saveButtonText}>Salvar</Text>
+        )}
       </TouchableOpacity>
     </ScrollView>
   );
@@ -236,11 +284,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginBottom: 10,
   },
-  changePhotoText: {
-    color: "#4B5563",
-    fontSize: 13,
-    fontWeight: "600",
-  },
   form: {
     gap: 14,
   },
@@ -273,6 +316,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#3552B2",
     alignItems: "center",
     justifyContent: "center",
+  },
+  buttonDisabled: {
+    opacity: 0.7,
   },
   saveButtonText: {
     color: "#FFFFFF",

@@ -14,6 +14,7 @@ import {
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { api } from "@/services/api";
+import { lookupInstitutionalAccount } from "@/services/auth";
 
 type InstitutionalAccount = {
   ra: string;
@@ -22,35 +23,7 @@ type InstitutionalAccount = {
   phone: string;
 };
 
-const institutionalAccounts: InstitutionalAccount[] = [
-  {
-    ra: "24011434",
-    name: "Marcinho Branco",
-    email: "marcinho.nbrc@universidade.edu",
-    phone: "(11) 99876-5432",
-  },
-  {
-    ra: "24011888",
-    name: "Beatriz Araujo",
-    email: "beatriz.araujo@universidade.edu",
-    phone: "(11) 99112-3344",
-  },
-  {
-    ra: "24012001",
-    name: "Lucas Ferreira",
-    email: "lucas.ferreira@universidade.edu",
-    phone: "(11) 98765-1030",
-  },
-];
-
 type Step = "lookup" | "found" | "password";
-
-function maskEmail(email: string) {
-  const [user, domain] = email.split("@");
-  if (!user || !domain) return email;
-  const visible = user.slice(0, 3);
-  return `${visible}${"*".repeat(Math.max(user.length - 3, 2))}@${domain}`;
-}
 
 export default function RegisterScreen() {
   const [step, setStep] = useState<Step>("lookup");
@@ -66,15 +39,15 @@ export default function RegisterScreen() {
 
   const normalizedRa = useMemo(() => ra.trim(), [ra]);
 
-  function handleLookup() {
+  async function handleLookup() {
     if (!normalizedRa) {
       Alert.alert("Erro", "Informe seu RA para localizar a conta.");
       return;
     }
 
-    const account = institutionalAccounts.find(
-      (currentAccount) => currentAccount.ra === normalizedRa,
-    );
+    setLoading(true);
+    const account = await lookupInstitutionalAccount(normalizedRa).catch(() => null);
+    setLoading(false);
 
     if (!account) {
       Alert.alert(
@@ -121,10 +94,7 @@ export default function RegisterScreen() {
       setLoading(true);
 
       await api.post("/register", {
-        name: foundAccount.name,
-        email: foundAccount.email,
         ra: foundAccount.ra,
-        phone: foundAccount.phone,
         password: normalizedPassword,
       });
 
@@ -216,8 +186,16 @@ export default function RegisterScreen() {
               keyboardType="number-pad"
             />
 
-            <TouchableOpacity style={styles.button} onPress={handleLookup}>
-              <Text style={styles.buttonText}>Localizar conta</Text>
+            <TouchableOpacity
+              style={[styles.button, loading && styles.buttonDisabled]}
+              onPress={handleLookup}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text style={styles.buttonText}>Localizar conta</Text>
+              )}
             </TouchableOpacity>
           </View>
         ) : null}
@@ -248,7 +226,7 @@ export default function RegisterScreen() {
               <View style={styles.accountMeta}>
                 <Text style={styles.accountMetaLabel}>Email</Text>
                 <Text style={styles.accountMetaValue}>
-                  {maskEmail(foundAccount.email)}
+                  {foundAccount.email}
                 </Text>
               </View>
 

@@ -162,7 +162,12 @@ export default function ItemDetailsScreen() {
   function handleContactPublisher() {
     const currentItem = item;
 
-    if (!currentItem?.user?.email) {
+    if (!currentItem) return;
+
+    const publisherPhone =
+      currentItem.hidePhone ? null : currentItem.contactPhone;
+
+    if (!currentItem?.user?.email && !publisherPhone) {
       Alert.alert(
         "Contato indisponível",
         "Não encontramos um email de contato para quem publicou este item.",
@@ -170,15 +175,40 @@ export default function ItemDetailsScreen() {
       return;
     }
 
-    const publisherEmail = currentItem.user.email;
+    const publisherEmail = currentItem.user?.email;
+
+    if (!publisherEmail) {
+      Alert.alert("Entrar em contato", publisherPhone || "Contato indisponível", [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Copiar telefone",
+          onPress: async () => {
+            await Clipboard.setStringAsync(publisherPhone || "");
+            Alert.alert("Telefone copiado", "O telefone foi copiado.");
+          },
+        },
+      ]);
+      return;
+    }
     const subject = encodeURIComponent(`VoltaPraMim: ${currentItem.title}`);
     const body = encodeURIComponent(
       `Olá, vi sua publicação sobre "${currentItem.title}" no VoltaPraMim e gostaria de combinar a devolução/recuperação do item.`,
     );
     const mailtoUrl = `mailto:${publisherEmail}?subject=${subject}&body=${body}`;
 
-    Alert.alert("Entrar em contato", publisherEmail, [
+    Alert.alert("Entrar em contato", publisherPhone || publisherEmail, [
       { text: "Cancelar", style: "cancel" },
+      ...(publisherPhone
+        ? [
+            {
+              text: "Copiar telefone",
+              onPress: async () => {
+                await Clipboard.setStringAsync(publisherPhone);
+                Alert.alert("Telefone copiado", "O telefone foi copiado.");
+              },
+            },
+          ]
+        : []),
       {
         text: "Copiar email",
         onPress: async () => {

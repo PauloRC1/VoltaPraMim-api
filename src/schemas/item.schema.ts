@@ -21,6 +21,8 @@ export const createItemSchema = z.object({
   location: z.string().min(1, "Localização é obrigatória"),
   date: validDateString,
   imageUrl: z.string().optional(),
+  contactPhone: z.string().trim().optional(),
+  hidePhone: z.boolean().optional(),
 });
 
 export const editItemSchema = z.object({
@@ -30,6 +32,8 @@ export const editItemSchema = z.object({
   location: z.string().min(1, "Localização é obrigatória").optional(),
   date: validDateString.optional(),
   imageUrl: z.string().nullable().optional(),
+  contactPhone: z.string().trim().nullable().optional(),
+  hidePhone: z.boolean().optional(),
 });
 
 export const listItemsQuerySchema = z.object({
