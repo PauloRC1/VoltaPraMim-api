@@ -1,6 +1,8 @@
 import { useEffect, useRef } from "react";
-import { router } from "expo-router";
+import { type Href, router } from "expo-router";
 import { Animated, Easing, Image, StyleSheet, Text, View } from "react-native";
+import { api } from "@/services/api";
+import { clearAuthData, getToken } from "@/services/auth.storage";
 
 export default function Splash() {
   const logoScale = useRef(new Animated.Value(0.92)).current;
@@ -49,10 +51,23 @@ export default function Splash() {
         setTimeout(resolve, 1800),
       );
 
+      let nextRoute: Href = "/onboarding";
+
+      try {
+        const token = await getToken();
+
+        if (token) {
+          await api.get("/auth/me");
+          nextRoute = "/home";
+        }
+      } catch {
+        await clearAuthData();
+      }
+
       await minimumSplashTime;
 
       if (isMounted) {
-        router.replace("/login");
+        router.replace(nextRoute);
       }
     }
 

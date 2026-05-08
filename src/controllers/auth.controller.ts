@@ -1,5 +1,6 @@
 import { FastifyReply, FastifyRequest } from "fastify";
 import bcrypt from "bcryptjs";
+import { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { registerSchema } from "../schemas/auth.schema";
 
@@ -34,15 +35,30 @@ export async function register(request: FastifyRequest, reply: FastifyReply) {
 
   const passwordHash = await bcrypt.hash(password, 8);
 
-  const user = await prisma.user.create({
-    data: {
-      name,
-      email: normalizedEmail,
-      ra,
-      password: passwordHash,
-      phone: normalizedPhone,
-    },
-  });
+  const user = await prisma.user
+    .create({
+      data: {
+        name,
+        email: normalizedEmail,
+        ra,
+        password: passwordHash,
+        phone: normalizedPhone,
+      },
+    })
+    .catch((error) => {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2002"
+      ) {
+        return null;
+      }
+
+      throw error;
+    });
+
+  if (!user) {
+    return reply.status(400).send({ message: "Email ou RA já cadastrado." });
+  }
 
   return reply.status(201).send({
     message: "Usuário cadastrado com sucesso.",

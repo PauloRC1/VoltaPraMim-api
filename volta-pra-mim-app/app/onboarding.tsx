@@ -3,6 +3,7 @@ import {
   Animated,
   FlatList,
   Image,
+  ImageSourcePropType,
   ImageStyle,
   NativeScrollEvent,
   NativeSyntheticEvent,
@@ -11,6 +12,7 @@ import {
   Text,
   useWindowDimensions,
   View,
+  ViewStyle,
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -19,11 +21,9 @@ type OnboardingItem = {
   id: string;
   title: string;
   description: string;
-  image: number;
-  imageStyle?: ImageStyle;
-  textBlockStyle?: {
-    marginTop?: number;
-  };
+  image: ImageSourcePropType;
+  imageStyle: ImageStyle;
+  textBlockStyle: ViewStyle;
 };
 
 const onboardingData: OnboardingItem[] = [

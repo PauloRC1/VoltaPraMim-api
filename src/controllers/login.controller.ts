@@ -1,4 +1,5 @@
 import { FastifyReply, FastifyRequest } from "fastify";
+import "@fastify/jwt";
 import { prisma } from "../lib/prisma";
 import bcrypt from "bcryptjs";
 import { loginSchema } from "../schemas/auth.schema";

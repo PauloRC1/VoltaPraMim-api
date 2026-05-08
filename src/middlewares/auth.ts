@@ -1,10 +1,9 @@
+import "@fastify/jwt";
 import { FastifyReply, FastifyRequest } from "fastify";
 
 export async function verifyJWT(request: FastifyRequest, reply: FastifyReply) {
   try {
-    await request.jwtVerify();
-
-    const user = request.user as { sub: string };
+    const user = await request.jwtVerify<{ sub: string }>();
 
     request.userId = user.sub;
   } catch (error) {
